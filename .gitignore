@@ -1,0 +1,34 @@
+# Environment files
+.env
+.env.*
+!.env.example
+.dev.vars
+
+# Dependencies
+node_modules/
+# Cloudflare
+.wrangler/
+# Supabase local state
+supabase/.branches/
+supabase/.temp/
+# Secrets
+secret-access/
+secrets/
+credentials/
+*.pem
+*.key
+*.p12
+*.pfx
+# Operating system
+.DS_Store
+# Logs
+*.log
+# Build output
+dist/
+build/
+.next/
+coverage/
+# Editors
+.vscode/
+.idea/
+._*

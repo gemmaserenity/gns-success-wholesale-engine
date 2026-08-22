@@ -1,0 +1,2 @@
+-- GNS Success Wholesale Engine
+-- Development seed data will be added as the schema is implemented.
