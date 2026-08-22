@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Private GNS Success wholesale opportunity screening dashboard">
+  <title>GNS Success — Opportunity Desk</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">GNS SUCCESS</p>
+      <h1>Opportunity Desk</h1>
+    </div>
+    <div class="status"><span id="health-dot"></span><span id="health">Checking engine…</span></div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div>
+        <p class="eyebrow">PHASE 1 · ARIZONA TRUSTEE SALES</p>
+        <h2>Put the economics first.</h2>
+        <p>Normalize a public record, test the wholesale spread, and see exactly why it should advance or stop.</p>
+      </div>
+      <div class="target"><span>Assignment target</span><strong>$10,000+</strong></div>
+    </section>
+
+    <nav class="tabs" aria-label="Input method">
+      <button class="tab active" data-tab="manual">Manual evaluation</button>
+      <button class="tab" data-tab="csv">CSV batch</button>
+    </nav>
+
+    <section id="manual-panel" class="panel">
+      <form id="lead-form">
+        <div class="section-heading"><h3>Property and event</h3><p>Use verified or clearly estimated inputs. Nothing is silently inferred.</p></div>
+        <div class="form-grid">
+          <label>County<select name="county"><option>Maricopa</option><option>Pinal</option></select></label>
+          <label>Parcel / APN<input name="apn" required value="105-82-001-A"></label>
+          <label class="wide">Property address<input name="address" required value="3744 W Chipman Rd, Phoenix, AZ 85041"></label>
+          <label class="wide">Owner name<input name="ownerName" required value="Carmen Santellano"></label>
+          <label>Trustee-sale date<input type="date" name="trusteeSaleDate"></label>
+          <label>Source record ID<input name="sourceRecordId" placeholder="Recorder document number"></label>
+        </div>
+
+        <div class="section-heading"><h3>Preliminary economics</h3><p>Enter ranges. The engine tests downside, base, and upside cases.</p></div>
+        <div class="form-grid money-grid">
+          <label>ARV low<input type="number" name="arvLow" required value="390000"></label>
+          <label>ARV high<input type="number" name="arvHigh" required value="430000"></label>
+          <label>Repairs low<input type="number" name="repairsLow" required value="30000"></label>
+          <label>Repairs high<input type="number" name="repairsHigh" required value="45000"></label>
+          <label>Debt low<input type="number" name="debtLow" required value="210000"></label>
+          <label>Debt high<input type="number" name="debtHigh" required value="230000"></label>
+          <label>Known liens<input type="number" name="liens" value="0"></label>
+          <label>Proposed contract<input type="number" name="proposedContractPrice" placeholder="Optional"></label>
+        </div>
+
+        <div class="section-heading"><h3>Evidence quality</h3><p>Confidence is explicit and affects advancement.</p></div>
+        <div class="form-grid">
+          <label>Owner confidence<select name="ownerConfidence"><option value="0.9">High · 90%</option><option value="0.7">Medium · 70%</option><option value="0.4">Low · 40%</option></select></label>
+          <label>Data confidence<select name="dataConfidence"><option value="0.85">High · 85%</option><option value="0.65">Medium · 65%</option><option value="0.4">Low · 40%</option></select></label>
+          <label>Buyer demand (0–100)<input type="number" name="buyerDemandScore" value="75" min="0" max="100"></label>
+          <label>Property desirability (0–100)<input type="number" name="propertyDesirabilityScore" value="75" min="0" max="100"></label>
+          <label class="check"><input type="checkbox" name="titleComplexity"> Known title complexity</label>
+          <label class="check"><input type="checkbox" name="ownerMismatch"> Owner mismatch</label>
+        </div>
+        <button class="primary" type="submit">Evaluate opportunity</button>
+      </form>
+    </section>
+
+    <section id="csv-panel" class="panel hidden">
+      <div class="section-heading"><h3>Batch evaluation</h3><p>Up to 500 records / 2 MB. Duplicate county + APN rows are rejected deterministically.</p></div>
+      <div class="dropzone">
+        <input id="csv-file" type="file" accept=".csv,text/csv">
+        <p>Choose a CSV using the documented Phase 1 columns.</p>
+        <a href="/trustee-sale-template.csv" download>Download template</a>
+      </div>
+      <button id="import-button" class="primary" type="button">Import and evaluate</button>
+    </section>
+
+    <section id="results" aria-live="polite"></section>
+  </main>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

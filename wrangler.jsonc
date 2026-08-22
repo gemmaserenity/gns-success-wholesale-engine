@@ -1,0 +1,30 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "gns-success-wholesale-engine",
+  "main": "workers/api/index.ts",
+  "compatibility_date": "2026-08-22",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "binding": "ASSETS",
+    "directory": "./apps/dashboard/public",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "vars": {
+    "ENVIRONMENT": "development",
+    "MAX_CSV_BYTES": "2097152"
+  },
+  "env": {
+    "production": {
+      "name": "gns-success-wholesale-engine-production",
+      "vars": {
+        "ENVIRONMENT": "production",
+        "MAX_CSV_BYTES": "2097152"
+      }
+    }
+  }
+}

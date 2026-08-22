@@ -1,0 +1,2 @@
+source,sourceRecordId,sourceUrl,county,apn,address,ownerName,trusteeSaleDate,recordedDate,propertyType,squareFeet,yearBuilt,arvLow,arvHigh,repairsLow,repairsHigh,debtLow,debtHigh,liens,proposedContractPrice,ownerConfidence,dataConfidence,buyerDemandScore,propertyDesirabilityScore,contactabilityScore,titleComplexity,ownerMismatch
+OPERATOR_CSV,DEMO-001,,Maricopa,105-82-001-A,"3744 W Chipman Rd, Phoenix, AZ 85041",Carmen Santellano,2026-11-20,2026-08-20,SFR,1600,2001,390000,430000,30000,45000,210000,230000,0,,0.9,0.85,75,75,20,false,false
