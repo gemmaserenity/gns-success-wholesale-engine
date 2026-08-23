@@ -1,64 +1,64 @@
 import { describe, expect, it, vi } from "vitest";
-import worker from "../../workers/api/index";
+import wholesaleWorker from "../../workers/api/index";
+import sellerWorker from "../../workers/seller/index";
+import type { SellerPortalEnv } from "../../workers/seller/intake-handler";
 
-function environment(assetFetch = vi.fn(async () => new Response("seller asset"))): Env {
+function sellerEnvironment(assetFetch = vi.fn(async () => new Response("seller portal"))): SellerPortalEnv {
   return {
-    ENVIRONMENT: "production",
-    SELLER_PORTAL_HOST: "sell.gns-success.com",
-    ASSETS: { fetch: assetFetch },
-  } as unknown as Env;
+    ASSETS: { fetch: assetFetch } as unknown as Fetcher,
+    SELLER_INTAKE_RATE_LIMIT: { limit: vi.fn(async () => ({ success: true })) } as unknown as RateLimit,
+  };
 }
 
-function request(url: string): Parameters<typeof worker.fetch>[0] {
-  return new Request(url) as Parameters<typeof worker.fetch>[0];
+function sellerRequest(url: string, init?: RequestInit): Parameters<typeof sellerWorker.fetch>[0] {
+  return new Request(url, init) as Parameters<typeof sellerWorker.fetch>[0];
 }
 
-describe("seller portal routing", () => {
-  it("redirects the public hostname root to the seller form", async () => {
-    const assetFetch = vi.fn(async () => new Response("operator dashboard"));
-    const response = await worker.fetch(
-      request("https://sell.gns-success.com/"),
-      environment(assetFetch),
-    );
+function wholesaleRequest(url: string): Parameters<typeof wholesaleWorker.fetch>[0] {
+  return new Request(url) as Parameters<typeof wholesaleWorker.fetch>[0];
+}
 
-    expect(response.status).toBe(302);
-    expect(response.headers.get("location")).toBe("https://sell.gns-success.com/seller/");
-    expect(response.headers.get("x-frame-options")).toBe("DENY");
-    expect(assetFetch).not.toHaveBeenCalled();
-  });
-
-  it("serves seller assets without a Cloudflare Access assertion", async () => {
+describe("separate seller portal Worker", () => {
+  it("serves its isolated public assets without Cloudflare Access", async () => {
     const assetFetch = vi.fn(async () => new Response("seller form"));
-    const response = await worker.fetch(
-      request("https://sell.gns-success.com/seller/"),
-      environment(assetFetch),
+    const response = await sellerWorker.fetch(
+      sellerRequest("https://sell.gns-success.com/"),
+      sellerEnvironment(assetFetch),
     );
 
     expect(response.status).toBe(200);
     expect(await response.text()).toBe("seller form");
+    expect(response.headers.get("x-frame-options")).toBe("DENY");
     expect(assetFetch).toHaveBeenCalledOnce();
   });
 
-  it("does not expose operator assets through the seller hostname", async () => {
-    const assetFetch = vi.fn(async () => new Response("operator javascript"));
-    const response = await worker.fetch(
-      request("https://sell.gns-success.com/app.js"),
-      environment(assetFetch),
-    );
-
-    expect(response.status).toBe(404);
-    expect(await response.json()).toEqual({ error: "Not found" });
-    expect(assetFetch).not.toHaveBeenCalled();
-  });
-
-  it("allows the published GNS Success logo on the public hostname", async () => {
-    const assetFetch = vi.fn(async () => new Response("logo"));
-    const response = await worker.fetch(
-      request("https://sell.gns-success.com/logo192.png"),
-      environment(assetFetch),
+  it("publishes only a minimal health response", async () => {
+    const response = await sellerWorker.fetch(
+      sellerRequest("https://sell.gns-success.com/api/health"),
+      sellerEnvironment(),
     );
 
     expect(response.status).toBe(200);
-    expect(assetFetch).toHaveBeenCalledOnce();
+    expect(await response.json()).toEqual({ ok: true, service: "gns-success-seller-portal" });
+  });
+
+  it("does not expose the public intake route on the wholesale Worker", async () => {
+    const response = await wholesaleWorker.fetch(
+      wholesaleRequest("https://wholesale.gns-success.com/api/seller/intake"),
+      { ENVIRONMENT: "production" } as Env,
+    );
+
+    expect(response.status).toBe(401);
+    expect(await response.json()).toEqual({ error: "Cloudflare Access authentication required." });
+  });
+
+  it("keeps the wholesale dashboard behind Cloudflare Access", async () => {
+    const response = await wholesaleWorker.fetch(
+      wholesaleRequest("https://wholesale.gns-success.com/"),
+      { ENVIRONMENT: "production" } as Env,
+    );
+
+    expect(response.status).toBe(401);
+    expect(await response.json()).toEqual({ error: "Cloudflare Access authentication required." });
   });
 });

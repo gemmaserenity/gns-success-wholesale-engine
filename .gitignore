@@ -25,6 +25,7 @@ credentials/
 *.log
 # Build output
 dist/
+dist-seller/
 build/
 .next/
 coverage/

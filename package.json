@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev --var ENVIRONMENT:development",
+    "dev:seller": "wrangler dev --config wrangler.seller.jsonc",
     "build": "wrangler deploy --dry-run --outdir dist",
+    "build:seller": "wrangler deploy --config wrangler.seller.jsonc --dry-run --outdir dist-seller",
     "cf-typegen": "wrangler types worker-configuration.d.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

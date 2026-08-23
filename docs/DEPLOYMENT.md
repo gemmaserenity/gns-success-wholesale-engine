@@ -149,11 +149,18 @@ After selective skip tracing is present, apply:
 supabase/migrations/202608230006_phase2_seller_intake.sql
 ```
 
-The Worker configuration declares `wholesale.gns-success.com` and `sell.gns-success.com` as custom domains. The seller hostname serves only public seller assets and `POST /api/seller/intake`; the private hostname and APIs remain behind Cloudflare Access.
+Deploy two independent Workers:
 
-Configure these encrypted Worker secrets without committing their values:
+- `wrangler.jsonc` deploys `gns-success-wholesale-engine` only to `wholesale.gns-success.com`; every request remains behind Cloudflare Access.
+- `wrangler.seller.jsonc` deploys `gns-success-seller-portal` only to `sell.gns-success.com`; its asset directory contains only the public seller page and its required assets.
+
+The public intake endpoint exists only in the seller Worker. The authenticated Worker retains the operator inquiry queue and an outbound link to the seller portal.
+
+Configure these encrypted secrets on `gns-success-seller-portal` without committing their values:
 
 ```text
+SUPABASE_URL
+SUPABASE_SECRET_KEY
 CALCOM_API_KEY
 RESEND_API_KEY
 OPERATOR_NOTIFICATION_EMAIL
@@ -161,10 +168,17 @@ OPERATOR_NOTIFICATION_EMAIL
 
 `RESEND_FROM_EMAIL` defaults to `GNS Success <offers@gns-success.com>` and requires `gns-success.com` to be verified in Resend. If the Cal.com account has more than one public event type, set the non-secret `CALCOM_EVENT_TYPE_ID` to the seller-call event ID or set `CALCOM_SELLER_BOOKING_URL` to its public URL. A sole public event type or one unambiguous seller-related event resolves automatically.
 
-Then deploy or push the Worker release and verify:
+Build both boundaries independently:
+
+```text
+npm run build
+npm run build:seller
+```
+
+Deploy the authenticated Worker with `wrangler.jsonc` and the public Worker with `wrangler.seller.jsonc`. Then verify:
 
 1. `https://sell.gns-success.com` loads without Cloudflare Access while `https://wholesale.gns-success.com` remains protected.
-2. Private API paths on the seller hostname return 401.
+2. The seller deployment contains no operator dashboard assets or private API routes; unknown API paths return 404.
 3. A honeypot submission, a sub-two-second submission, and the eleventh submission from one client within a minute are rejected.
 4. A representative valid inquiry stores one `seller_inquiries` row, one `seller_qualification_assessments` row, three channel consent events, one `NEW` status event, and a PII-minimized audit event.
 5. A qualified inquiry returns a Cal.com booking link; confirm the Cal.com event-type lookup contains no seller data.

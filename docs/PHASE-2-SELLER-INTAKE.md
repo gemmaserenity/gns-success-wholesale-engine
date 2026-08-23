@@ -2,7 +2,7 @@
 
 ## Operational boundary
 
-The public seller portal is served at `https://sell.gns-success.com`. The private opportunity desk remains at `https://wholesale.gns-success.com` behind Cloudflare Access. Only the bounded `POST /api/seller/intake` endpoint and seller assets are public on the seller hostname.
+The public seller portal is served by the dedicated `gns-success-seller-portal` Worker at `https://sell.gns-success.com`. Its asset bundle contains only the seller page, stylesheet, script, and logo. The private `gns-success-wholesale-engine` Worker remains at `https://wholesale.gns-success.com` behind Cloudflare Access. The wholesale dashboard links out to the seller portal; the seller portal has no route or link into wholesale operations. Only the bounded `POST /api/seller/intake`, minimal health response, and isolated seller assets are public.
 
 The intake flow records one seller-authored submission, a deterministic `seller-intake-v1` assessment, channel-specific consent evidence, status history, any Cal.com appointment offer, and Resend delivery outcomes. A browser-generated submission UUID makes a retry idempotent. The Worker also enforces a request-size limit, a short completion-time check, a honeypot, and a Cloudflare rate-limiting binding.
 
@@ -25,4 +25,3 @@ Resend receives the minimum data needed for a consented seller acknowledgement: 
 ## AI boundary
 
 The dashboard shows a deterministic evidence summary. No seller submission is transmitted to an AI provider in this milestone. AI-assisted intake remains a separate Phase 2 item requiring a documented provider, data minimization, retention, prompt/version provenance, human review, and explicit activation.
-

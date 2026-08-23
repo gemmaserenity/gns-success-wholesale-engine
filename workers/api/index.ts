@@ -1,6 +1,5 @@
 import { z, ZodError } from "zod";
 import { TrusteeSaleCsvAdapter } from "../../src/adapters/csv/csv-adapter";
-import { resolveSellerBookingUrl } from "../../src/adapters/calcom/calcom-adapter";
 import { buyerProfileInputSchema } from "../../src/domain/buyers/schema";
 import {
   analyzeBuyerDemand,
@@ -9,8 +8,7 @@ import {
 } from "../../src/domain/buyers/matching";
 import { buyerStatuses } from "../../src/domain/buyers/types";
 import type { BuyerStatus } from "../../src/domain/buyers/types";
-import { qualifySellerIntake } from "../../src/domain/seller-intake/qualification";
-import { sellerInquiryStatusInputSchema, sellerIntakeSchema } from "../../src/domain/seller-intake/schema";
+import { sellerInquiryStatusInputSchema } from "../../src/domain/seller-intake/schema";
 import { sellerInquiryStatuses, sellerQualificationTiers } from "../../src/domain/seller-intake/types";
 import type { SellerInquiryStatus, SellerQualificationTier } from "../../src/domain/seller-intake/types";
 import { evaluateEnrichmentGate } from "../../src/domain/enrichment/gate";
@@ -49,11 +47,8 @@ import {
 } from "../../src/services/skip-trace-repository";
 import {
   listSellerInquiries,
-  persistSellerInquiry,
-  recordSellerDelivery,
   recordSellerInquiryStatus,
 } from "../../src/services/seller-intake-repository";
-import { deliverSellerNotifications } from "../../src/services/seller-notifications";
 
 const jsonHeaders = { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" };
 
@@ -61,32 +56,7 @@ function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), { status, headers: jsonHeaders });
 }
 
-function secureSellerResponse(response: Response): Response {
-  const headers = new Headers(response.headers);
-  headers.set("Content-Security-Policy", "default-src 'self'; style-src 'self'; script-src 'self'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'self'; frame-ancestors 'none'");
-  headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-  headers.set("X-Content-Type-Options", "nosniff");
-  headers.set("X-Frame-Options", "DENY");
-  headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
-  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
-}
-
-function isSellerPortalHost(url: URL, env: Env): boolean {
-  return url.hostname.toLowerCase() === env.SELLER_PORTAL_HOST.trim().toLowerCase();
-}
-
-function isPublicSellerRequest(request: Request, env: Env): boolean {
-  const url = new URL(request.url);
-  const sellerHost = isSellerPortalHost(url, env);
-  const sellerAssets = new Set(["/", "/logo192.png", "/seller", "/seller/", "/seller/index.html", "/seller/seller.css", "/seller/seller.js"]);
-  if (env.ENVIRONMENT !== "production" && (sellerAssets.has(url.pathname) || url.pathname === "/api/seller/intake")) return true;
-  if (!sellerHost) return false;
-  if (request.method === "GET" && sellerAssets.has(url.pathname)) return true;
-  return request.method === "POST" && url.pathname === "/api/seller/intake";
-}
-
 function authorized(request: Request, env: Env): boolean {
-  if (isPublicSellerRequest(request, env)) return true;
   if (env.ENVIRONMENT !== "production") return true;
   if (!request.headers.get("Cf-Access-Jwt-Assertion")) return false;
   if (request.method === "GET" || request.method === "HEAD") return true;
@@ -152,81 +122,8 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
       ok: true,
       service: "gns-success-wholesale-engine",
       persistence,
-      integrations: {
-        calcom: Boolean(env.CALCOM_API_KEY || env.CALCOM_SELLER_BOOKING_URL),
-        resend: Boolean(env.RESEND_API_KEY && env.RESEND_FROM_EMAIL),
-        operatorNotifications: Boolean(env.RESEND_API_KEY && env.OPERATOR_NOTIFICATION_EMAIL),
-      },
+      sellerPortal: "https://sell.gns-success.com",
     });
-  }
-  if (url.pathname === "/api/seller/intake" && request.method === "POST") {
-    if (!request.headers.get("Content-Type")?.toLowerCase().startsWith("application/json")) {
-      return json({ error: "Content-Type must be application/json." }, 415);
-    }
-    const rateKey = request.headers.get("cf-connecting-ip") ?? "unknown-client";
-    const rateLimit = await env.SELLER_INTAKE_RATE_LIMIT.limit({ key: rateKey });
-    if (!rateLimit.success) return json({ error: "Too many submissions. Please wait a minute and try again." }, 429);
-    const config = supabaseConfig(env);
-    if (!config) return json({ error: "Seller intake is temporarily unavailable." }, 503);
-    const requestBody: unknown = JSON.parse(await parseBoundedText(request, 32_768));
-    const intake = sellerIntakeSchema.parse(requestBody);
-    const submittedAt = new Date();
-    const startedAt = new Date(intake.startedAt);
-    if (submittedAt.getTime() - startedAt.getTime() < 2_000 || submittedAt.getTime() - startedAt.getTime() > 86_400_000) {
-      return json({ error: "Please reload the form and try again." }, 422);
-    }
-    const qualification = qualifySellerIntake(intake);
-    let bookingUrl: string | undefined;
-    if (qualification.eligibleForBooking) {
-      const configuredEventTypeId = env.CALCOM_EVENT_TYPE_ID ? Number(env.CALCOM_EVENT_TYPE_ID) : undefined;
-      if (configuredEventTypeId !== undefined && (!Number.isInteger(configuredEventTypeId) || configuredEventTypeId < 1)) {
-        throw new Error("CALCOM_EVENT_TYPE_ID must be a positive whole number");
-      }
-      try {
-        bookingUrl = await resolveSellerBookingUrl(env.CALCOM_API_KEY, {
-          ...(env.CALCOM_SELLER_BOOKING_URL ? { configuredUrl: env.CALCOM_SELLER_BOOKING_URL } : {}),
-          ...(configuredEventTypeId !== undefined ? { eventTypeId: configuredEventTypeId } : {}),
-        });
-      } catch (error) {
-        console.error(JSON.stringify({ event: "calcom_booking_link_failed", inquiryId: intake.submissionId, message: error instanceof Error ? error.message : "Unknown error" }));
-      }
-    }
-    try {
-      const persisted = await persistSellerInquiry(config, intake, qualification, submittedAt.toISOString(), bookingUrl);
-      let deliveries = persisted.inquiry.deliveryStatuses;
-      if (persisted.created) {
-        const attemptedAt = new Date().toISOString();
-        const notificationResults = await deliverSellerNotifications({
-          inquiryId: persisted.inquiry.id,
-          intake,
-          qualification,
-          ...(bookingUrl ? { bookingUrl } : {}),
-          resendApiKey: env.RESEND_API_KEY,
-          fromEmail: env.RESEND_FROM_EMAIL,
-          operatorEmail: env.OPERATOR_NOTIFICATION_EMAIL,
-        });
-        await Promise.all(notificationResults.map(async (delivery) => {
-          try {
-            await recordSellerDelivery(config, persisted.inquiry.id, delivery, attemptedAt);
-          } catch (error) {
-            console.error(JSON.stringify({ event: "seller_delivery_audit_failed", inquiryId: persisted.inquiry.id, kind: delivery.kind, message: error instanceof Error ? error.message : "Unknown error" }));
-          }
-        }));
-        deliveries = notificationResults;
-      }
-      return json({
-        inquiryId: persisted.inquiry.id,
-        created: persisted.created,
-        qualification: { tier: qualification.tier, eligibleForBooking: qualification.eligibleForBooking },
-        bookingUrl: bookingUrl ?? persisted.inquiry.bookingUrl ?? null,
-        acknowledgement: deliveries.find((delivery) => delivery.kind === "SELLER_ACKNOWLEDGEMENT")?.status ?? "SKIPPED",
-        callInitiated: false,
-        textInitiated: false,
-      }, persisted.created ? 201 : 200);
-    } catch (error) {
-      if (error instanceof SupabaseFeatureUnavailableError) return json({ error: "Seller intake is being prepared. Please try again shortly." }, 503);
-      throw error;
-    }
   }
   if (url.pathname === "/api/seller/inquiries" && request.method === "GET") {
     const config = supabaseConfig(env);
@@ -607,23 +504,11 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
 
 export default {
   async fetch(request, env): Promise<Response> {
-    const requestUrl = new URL(request.url);
-    const sellerHost = isSellerPortalHost(requestUrl, env);
-    if (sellerHost && !isPublicSellerRequest(request, env)) {
-      return secureSellerResponse(json({ error: "Not found" }, 404));
-    }
     if (!authorized(request, env)) return json({ error: "Cloudflare Access authentication required." }, 401);
     try {
-      const url = requestUrl;
+      const url = new URL(request.url);
       if (url.pathname.startsWith("/api/")) return await handleApi(request, env);
-      if (sellerHost && (url.pathname === "/" || url.pathname === "/seller")) {
-        return secureSellerResponse(Response.redirect(new URL("/seller/", url), 302));
-      }
-      if (sellerHost) {
-        return secureSellerResponse(await env.ASSETS.fetch(request));
-      }
-      const assetResponse = await env.ASSETS.fetch(request);
-      return assetResponse;
+      return await env.ASSETS.fetch(request);
     } catch (error) {
       console.error(JSON.stringify({ event: "request_failed", message: error instanceof Error ? error.message : "Unknown error" }));
       if (error instanceof ZodError) return json({ error: "Validation failed", issues: error.issues }, 422);

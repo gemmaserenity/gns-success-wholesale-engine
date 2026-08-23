@@ -51,12 +51,12 @@ Phase 2 now includes a durable opportunity desk, gated property-evidence workflo
 - each contact-research case records necessity, privacy minimization, intended source, bounded cost, provenance, and immutable findings;
 - contact standing is append-only and separate from contact data, with do-not-contact suppression and explicit eligible channels;
 - the skip-tracing boundary has no provider adapter, bulk endpoint, external transmission, or outreach action;
-- a separate public seller portal records inbound property facts, deterministic qualification, and explicit channel permissions without exposing the private dashboard;
+- an independently deployed public seller Worker records inbound property facts, deterministic qualification, and explicit channel permissions from an isolated asset bundle with no route into the private dashboard;
 - eligible sellers receive a Cal.com booking option without the Worker sending seller data to Cal.com;
 - Resend sends consented transactional acknowledgements and PII-minimized operator notifications with idempotent delivery evidence;
 - seller submissions, consent, status, appointment offers, and delivery history are append-only and auditable.
 
-Apply the migrations in `supabase/migrations/` in filename order. Seller intake requires `202608230006_phase2_seller_intake.sql`. See [`docs/PHASE-2-SELLER-INTAKE.md`](docs/PHASE-2-SELLER-INTAKE.md) for the public acquisition boundary and [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for current deployment checks.
+Apply the migrations in `supabase/migrations/` in filename order. Seller intake requires `202608230006_phase2_seller_intake.sql`. The private and public Workers build separately with `npm run build` and `npm run build:seller`. See [`docs/PHASE-2-SELLER-INTAKE.md`](docs/PHASE-2-SELLER-INTAKE.md) for the public acquisition boundary and [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for current deployment checks.
 
 ## Phase 1 foundation
 

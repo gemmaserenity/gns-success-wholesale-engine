@@ -114,9 +114,9 @@ The database independently checks the latest owner standing and refuses a new sk
 
 ## 2026-08-23 — Public seller intake and scheduling
 
-### Public acquisition and private operations use separate hostnames
+### Public acquisition and private operations use separate Workers
 
-`sell.gns-success.com` exposes only seller assets and the bounded intake write. `wholesale.gns-success.com` remains the private operator application behind Cloudflare Access. Private APIs return 401 on the public seller hostname.
+`sell.gns-success.com` is bound to `gns-success-seller-portal`, whose asset bundle contains only the seller page and bounded intake write. `wholesale.gns-success.com` is bound separately to `gns-success-wholesale-engine` behind Cloudflare Access. The public Worker has no dashboard routes or assets; the private dashboard keeps only an outbound seller-portal link.
 
 ### Inbound contact information is not blanket permission
 
