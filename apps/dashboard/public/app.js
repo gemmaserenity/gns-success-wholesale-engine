@@ -1,6 +1,164 @@
 const $ = (selector) => document.querySelector(selector);
 const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
+const fieldHelp = {
+  county: "Choose the Arizona county that maintains this parcel's public records. Find it on the assessor, treasurer, recorder, or trustee-sale record.",
+  apn: "The county parcel number (APN) uniquely identifies the property. Copy it from the county assessor or treasurer record.",
+  address: "The property's physical street address. Verify it against the parcel record; do not use the owner's mailing address here.",
+  ownerName: "The owner name shown on the latest reliable public record. The county assessor or recorded deed are the usual starting points.",
+  trusteeSaleDate: "The scheduled foreclosure auction date from a current Notice of Trustee's Sale or trustee source. Leave blank when it has not been verified.",
+  sourceRecordId: "The document or record number that lets you trace this lead back to its source, such as a county recorder document number.",
+  arvLow: "Your conservative after-repair value estimate: what the property may sell for after repairs. Support it with recent comparable sales; this is not the assessed value.",
+  arvHigh: "Your optimistic but supportable after-repair value estimate, based on recent comparable renovated sales in the same market.",
+  repairsLow: "The lower reasonable estimate for renovation and property-condition work. Use a walkthrough, contractor estimate, photos, or a clearly labeled preliminary estimate.",
+  repairsHigh: "The upper reasonable repair estimate, including uncertainty for work that has not yet been inspected.",
+  debtLow: "The lower estimate of loans or other debt that must be paid at closing. A recorded deed of trust shows original debt, not the current payoff; verify later with a payoff statement.",
+  debtHigh: "The upper estimate of debt that must be paid at closing. Include uncertainty when only recorded loan documents or owner statements are available.",
+  liens: "Known additional liens, delinquent taxes, judgments, or other payoff items. Use current treasurer, recorder, title, or lien evidence and avoid double-counting mortgage debt.",
+  proposedContractPrice: "The price GNS may agree to pay the seller. If blank, the engine estimates a contract price as base debt + known liens + the configured $5,000 seller-net floor.",
+  ownerConfidence: "How confident you are that the recorded owner identity is correct. Compare assessor and deed records; lower this when names conflict or ownership is unclear.",
+  dataConfidence: "Your overall confidence in the economic inputs. Use a lower value when ARV, repairs, debt, liens, or dates are estimates rather than verified evidence.",
+  buyerDemandScore: "A provisional 0–100 estimate used for the first screening. After buyer matching is run, the model replaces it in a new evaluation using recorded buyer profiles.",
+  propertyDesirabilityScore: "An operator-entered 0–100 view of investor appeal, considering location, condition, property type, layout, and resale demand. Record the supporting evidence separately.",
+  titleComplexity: "Check this when known facts suggest probate, bankruptcy, multiple owners, disputed liens, entities, trusts, or another title issue that may complicate closing.",
+  ownerMismatch: "Check this when owner names conflict between reliable sources or the apparent seller is not the recorded owner. This is a stop-and-verify warning.",
+  csvFile: "A batch file using the downloadable template and the same lead fields as manual evaluation. The app accepts up to 500 records or 2 MB.",
+  queueState: "Filters saved opportunities by their current workflow result: qualified, preliminary screen, or rejected.",
+  queueCounty: "Filters the opportunity queue to Maricopa or Pinal County. Leave it on both counties to see everything.",
+  buyerStatusFilter: "Filters buyer profiles by whether they are active, paused, do-not-contact, or archived.",
+  buyerCountyFilter: "Filters buyers by the counties explicitly included in their recorded buy box.",
+  displayName: "The buyer or investor's recognizable name. Use the person or team name you use when communicating with them.",
+  companyName: "The buyer's business or acquisition company, when known. This is optional and should come from the buyer or verified business information.",
+  email: "A buyer email supplied by the buyer or otherwise lawfully recorded. An email alone does not establish permission to market deals to them.",
+  phone: "A buyer phone number supplied by the buyer or otherwise lawfully recorded. Contact standing controls whether outreach is allowed.",
+  status: "Controls whether this buyer participates operationally. Only active profiles can become eligible buyer matches.",
+  contactStatus: "Records the basis for contacting this buyer. Existing relationship or opted in can be contact-eligible; unverified and do-not-contact cannot.",
+  source: "How this buyer profile entered the database, such as OPERATOR_MANUAL, referral, event, or a permitted source.",
+  sourceUrl: "A link that supports the buyer or property evidence. Use the exact public record, permitted source, or research page rather than a generic home page.",
+  notes: "Operator notes that help qualify or understand the buyer. Do not place sensitive personal data or unsupported claims here.",
+  preferredCounties: "Counties the buyer has explicitly said or demonstrated they will purchase in. At least one is required.",
+  preferredZips: "Optional ZIP-code targets, separated by commas or spaces. Leave blank when the entire selected county is acceptable.",
+  propertyTypes: "Property categories the buyer will consider. Record only types the buyer has communicated or demonstrated.",
+  purchasePriceMin: "The lowest acquisition price the buyer wants to consider. Buyer matching compares this range with estimated contract price + the target assignment fee.",
+  purchasePriceMax: "The highest acquisition price the buyer wants to consider. Buyer matching compares this range with estimated contract price + the target assignment fee.",
+  arvMin: "The buyer's minimum acceptable after-repair value, based on the buy box they communicated or demonstrated.",
+  arvMax: "The buyer's maximum acceptable after-repair value, if they have one. Leave blank when no upper limit is known.",
+  maxRepairs: "The largest repair budget the buyer is willing to take on. Matching uses the property's base repair estimate.",
+  closeSpeedDays: "The fastest number of days the buyer says they can reliably close. Matching compares it with a verified property deadline when one exists.",
+  squareFeetMin: "The buyer's minimum building size. This criterion stays unknown until square footage is recorded as property evidence.",
+  squareFeetMax: "The buyer's maximum building size. This criterion stays unknown until square footage is recorded as property evidence.",
+  yearBuiltMin: "The oldest construction year the buyer will accept. Matching needs a recorded year-built fact to verify it.",
+  yearBuiltMax: "The newest construction year the buyer will accept, if applicable. Matching needs a recorded year-built fact to verify it.",
+  hoaPreference: "Whether the buyer accepts HOA properties, wants to avoid them, or has no preference. HOA status must be recorded as property evidence for a constrained match.",
+  occupancies: "Occupancy situations the buyer accepts. Choose Any only when occupancy does not restrict the buy box.",
+  financing: "How the buyer expects to fund purchases. Record what the buyer has demonstrated or documented, not an assumption.",
+  verifiedPurchaseCount: "Prior purchases supported by reliable evidence, such as recorded deeds or verified closing records.",
+  gnsClosingCount: "Transactions this buyer has successfully closed directly with GNS. The system uses this as credibility evidence.",
+  retradeCount: "Times the buyer materially reduced their agreed price or terms late in a transaction. This lowers buyer credibility.",
+  reliabilityScore: "Optional operator rating from 0–100 supported by documented performance. Leave blank until there is enough evidence.",
+  sourceType: "Classifies where property evidence came from: public record, operator research, permitted API, or paid provider.",
+  provider: "The agency, company, or research source that supplied the evidence, such as Maricopa County Assessor.",
+  costDollars: "The actual cost to obtain this evidence. Use zero for free public records or operator research with no direct vendor charge.",
+  classification: "Describes evidence strength. Public record or verified evidence is stronger than an estimate; model-derived means calculated by a documented model.",
+  confidence: "How strongly this source supports the facts being added. This percentage is stored with the evidence and contributes to average confidence.",
+  propertyType: "The property category shown by assessor data or verified research, such as SFR, condo, townhouse, multifamily, mobile home, or land.",
+  squareFeet: "Building living area from the county assessor or another reliable property source. Use the source's stated measurement and link it.",
+  bedrooms: "Recorded bedroom count from assessor data, listing history, inspection, or other reliable property evidence.",
+  bathrooms: "Recorded bathroom count from assessor data, listing history, inspection, or other reliable property evidence.",
+  yearBuilt: "Construction year from the assessor or another reliable property record.",
+  lotSquareFeet: "Parcel or lot area from assessor or GIS records, measured in square feet.",
+  assessedValue: "The county's assessed value for tax purposes. It is a public-record fact and is not the same as market value or ARV.",
+  lastSaleDate: "The most recent verified transfer or sale date from recorder, assessor, or reliable transaction records.",
+  lastSalePrice: "The most recent verified sale consideration when available. Some transfers are non-market transactions, so review the deed context.",
+  occupancy: "The best-supported current occupancy state: vacant, tenant occupied, owner occupied, or unknown. Do not infer it from mailing address alone.",
+  hoaStatus: "Whether the property is subject to an HOA, supported by disclosure, assessor/GIS information, title research, or verified operator research.",
+  mailingAddress: "The owner's mailing address shown by the assessor or tax record. It may help compare ownership facts but is not proof of occupancy.",
+};
+
+let helpCaptionSequence = 0;
+
+function addInfoMarker(container, key, control) {
+  const help = fieldHelp[key];
+  if (!help || container.querySelector(".info-tip")) return;
+  const textNode = [...container.childNodes].find((node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim());
+  if (!textNode) return;
+  const caption = textNode.textContent.trim();
+  const captionLine = document.createElement("span");
+  captionLine.className = "field-caption";
+  const captionText = document.createElement("span");
+  captionText.textContent = caption;
+  captionText.id = `field-caption-${++helpCaptionSequence}`;
+  captionLine.append(captionText);
+  if (control) control.setAttribute("aria-labelledby", captionText.id);
+  const marker = document.createElement("span");
+  marker.className = "info-tip";
+  marker.tabIndex = 0;
+  marker.setAttribute("role", "button");
+  marker.setAttribute("aria-label", `Information about ${caption}`);
+  marker.setAttribute("aria-expanded", "false");
+  marker.innerHTML = `<span aria-hidden="true">i</span><span class="info-tooltip" role="tooltip">${escapeHtml(help)}</span>`;
+  captionLine.append(marker);
+  container.replaceChild(captionLine, textNode);
+}
+
+function decorateFieldHelp(root = document) {
+  root.querySelectorAll("fieldset").forEach((fieldset) => {
+    const legend = fieldset.querySelector(":scope > legend");
+    const control = fieldset.querySelector("input:not([type='hidden']), select, textarea");
+    if (legend && control) addInfoMarker(legend, control.name, undefined);
+  });
+  root.querySelectorAll("label").forEach((label) => {
+    const control = label.querySelector("input:not([type='hidden']), select, textarea");
+    if (!control) return;
+    if (label.closest("fieldset") && ["preferredCounties", "propertyTypes", "occupancies", "financing"].includes(control.name)) return;
+    const key = control.dataset.field || control.name || control.id;
+    addInfoMarker(label, ({
+      "csv-file": "csvFile",
+      "queue-state": "queueState",
+      "queue-county": "queueCounty",
+      "buyer-status-filter": "buyerStatusFilter",
+      "buyer-county-filter": "buyerCountyFilter",
+    })[key] || key, control);
+  });
+}
+
+function closeInfoMarkers(except) {
+  document.querySelectorAll(".info-tip.open").forEach((marker) => {
+    if (marker === except) return;
+    marker.classList.remove("open");
+    marker.setAttribute("aria-expanded", "false");
+  });
+}
+
+document.addEventListener("click", (event) => {
+  const marker = event.target.closest(".info-tip");
+  if (!marker) {
+    closeInfoMarkers();
+    return;
+  }
+  event.preventDefault();
+  event.stopPropagation();
+  const willOpen = !marker.classList.contains("open");
+  closeInfoMarkers(marker);
+  marker.classList.toggle("open", willOpen);
+  marker.setAttribute("aria-expanded", String(willOpen));
+});
+
+document.addEventListener("keydown", (event) => {
+  const marker = event.target.closest?.(".info-tip");
+  if (!marker || (event.key !== "Enter" && event.key !== " ")) return;
+  event.preventDefault();
+  marker.click();
+});
+
+const helpObserver = new MutationObserver((mutations) => {
+  mutations.forEach((mutation) => mutation.addedNodes.forEach((node) => {
+    if (node.nodeType === Node.ELEMENT_NODE) decorateFieldHelp(node);
+  }));
+});
+decorateFieldHelp();
+helpObserver.observe(document.body, { childList: true, subtree: true });
+
 fetch("/api/health").then((response) => response.json()).then((health) => {
   $("#health").textContent = health.persistence ? "Engine online · database connected" : "Engine online · local evaluation mode";
   $("#health-dot").classList.add("ok");

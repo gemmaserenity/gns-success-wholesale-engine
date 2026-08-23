@@ -95,6 +95,73 @@ main { width: min(1180px, calc(100% - 40px)); margin: 36px auto 80px; }
 .form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
 label { display: flex; flex-direction: column; gap: 6px; color: #5d514a; font-size: 12px; font-weight: 750; }
 label.wide { grid-column: span 2; }
+.field-caption { display: inline-flex; align-items: center; gap: 6px; width: fit-content; }
+.info-tip {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  border: 1.5px solid #9a7562;
+  border-radius: 50%;
+  color: var(--brown);
+  background: #fffdf9;
+  font: 800 11px/1 Georgia, serif;
+  text-transform: none;
+  letter-spacing: 0;
+  cursor: help;
+}
+.info-tip:hover,
+.info-tip:focus-visible,
+.info-tip.open { border-color: var(--orange); color: var(--red-rock-dark); background: var(--orange-soft); outline: none; }
+.info-tooltip {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 8px);
+  left: 0;
+  width: min(290px, calc(100vw - 40px));
+  padding: 11px 12px;
+  border: 1px solid #cdbeb1;
+  border-radius: 4px;
+  background: var(--brown-strong);
+  color: #fffdf9;
+  box-shadow: 0 8px 24px rgba(53, 47, 43, .2);
+  font: 500 12px/1.45 Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: 0;
+  transform: translateY(-3px);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .12s ease, transform .12s ease, visibility .12s ease;
+}
+.info-tooltip::before {
+  content: "";
+  position: absolute;
+  left: 9px;
+  bottom: 100%;
+  border: 6px solid transparent;
+  border-bottom-color: var(--brown-strong);
+}
+.info-tip:hover .info-tooltip,
+.info-tip:focus-visible .info-tooltip,
+.info-tip.open .info-tooltip { opacity: 1; visibility: visible; transform: translateY(0); }
+.form-grid > label:nth-child(4n) .info-tooltip,
+.fact-grid > label:nth-child(4n) .info-tooltip,
+.enrichment-source-grid > label:nth-child(3n) .info-tooltip,
+.buyer-form-grid > label:nth-child(2n) .info-tooltip {
+  right: 0;
+  left: auto;
+}
+.form-grid > label:nth-child(4n) .info-tooltip::before,
+.fact-grid > label:nth-child(4n) .info-tooltip::before,
+.enrichment-source-grid > label:nth-child(3n) .info-tooltip::before,
+.buyer-form-grid > label:nth-child(2n) .info-tooltip::before {
+  right: 3px;
+  left: auto;
+}
 
 input,
 select,
@@ -104,6 +171,7 @@ select:focus,
 textarea:focus { outline: 3px solid rgba(242, 107, 33, .15); border-color: var(--orange); }
 label.check { flex-direction: row; align-items: center; padding-top: 24px; }
 label.check input { width: 17px; min-height: 17px; accent-color: var(--red-rock); }
+label.check .field-caption { gap: 5px; }
 
 .primary { margin-top: 28px; padding: 13px 20px; border: 0; border-radius: 3px; background: var(--red-rock); color: white; font-weight: 800; cursor: pointer; box-shadow: 0 6px 14px rgba(125, 52, 40, .16); }
 .primary:hover { background: var(--red-rock-dark); }
