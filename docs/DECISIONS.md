@@ -36,7 +36,7 @@ Underwriting remains fully usable with no credentials. When `SUPABASE_URL` and t
 
 ### Cloudflare Access as the Phase 1 authentication boundary
 
-Production requests require the `Cf-Access-Jwt-Assertion` header, which Cloudflare Access supplies after authentication. The Worker and dashboard must be placed behind an Access application for `app.gns-success.com`; development mode bypasses this edge-only boundary for local work.
+Production requests require the `Cf-Access-Jwt-Assertion` header, which Cloudflare Access supplies after authentication. The Worker and dashboard must be placed behind an Access application for `wholesale.gns-success.com`; development mode bypasses this edge-only boundary for local work.
 
 ### Operator-assisted county ingestion first
 
