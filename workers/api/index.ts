@@ -1,6 +1,11 @@
 import { z, ZodError } from "zod";
 import { TrusteeSaleCsvAdapter } from "../../src/adapters/csv/csv-adapter";
 import { buyerProfileInputSchema } from "../../src/domain/buyers/schema";
+import {
+  analyzeBuyerDemand,
+  buildBuyerDemandEvaluation,
+  buildBuyerMatchProperty,
+} from "../../src/domain/buyers/matching";
 import { buyerStatuses } from "../../src/domain/buyers/types";
 import type { BuyerStatus } from "../../src/domain/buyers/types";
 import { evaluateEnrichmentGate } from "../../src/domain/enrichment/gate";
@@ -11,6 +16,7 @@ import { counties, pipelineStates } from "../../src/domain/opportunities/types";
 import type { County, PipelineState } from "../../src/domain/opportunities/types";
 import { evaluateOpportunity } from "../../src/services/evaluate-opportunity";
 import { listBuyers, persistBuyerProfile } from "../../src/services/buyer-repository";
+import { getBuyerMatchStatus, persistBuyerMatchRun } from "../../src/services/buyer-match-repository";
 import {
   getEnrichmentCandidate,
   getPropertyEnrichmentStatus,
@@ -180,6 +186,67 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
     } catch (error) {
       if (error instanceof SupabaseFeatureUnavailableError) {
         return json({ history: [], persistence: true, historyAvailable: false });
+      }
+      throw error;
+    }
+  }
+  if (url.pathname === "/api/opportunities/buyer-matches" && request.method === "GET") {
+    const config = supabaseConfig(env);
+    if (!config) return json({ buyerMatch: null, persistence: false });
+    const evaluationId = z.string().uuid().parse(url.searchParams.get("evaluationId"));
+    try {
+      const candidate = await getEnrichmentCandidate(config, evaluationId);
+      const buyerMatch = await getBuyerMatchStatus(config, candidate.propertyId);
+      return json({ buyerMatch: buyerMatch ?? null, persistence: true, buyerMatchingAvailable: true });
+    } catch (error) {
+      if (error instanceof SupabaseFeatureUnavailableError) {
+        return json({ buyerMatch: null, persistence: true, buyerMatchingAvailable: false });
+      }
+      throw error;
+    }
+  }
+  if (url.pathname === "/api/opportunities/buyer-matches" && request.method === "POST") {
+    const config = supabaseConfig(env);
+    if (!config) return json({ error: "Supabase persistence is required for buyer matching." }, 503);
+    const requestBody: unknown = JSON.parse(await parseBoundedText(request, 8_192));
+    const evaluationId = z.object({ evaluationId: z.string().uuid() }).parse(requestBody).evaluationId;
+    try {
+      const candidate = await getEnrichmentCandidate(config, evaluationId);
+      if (candidate.state === "REJECTED") {
+        return json({ error: "Rejected opportunities cannot enter buyer-demand matching." }, 422);
+      }
+      const [buyers, enrichment] = await Promise.all([
+        listBuyers(config, { status: "ACTIVE", limit: 100 }),
+        getPropertyEnrichmentStatus(config, candidate.propertyId),
+      ]);
+      const now = new Date();
+      const property = buildBuyerMatchProperty({
+        rawInput: candidate.rawInput,
+        propertyFacts: enrichment.currentFacts,
+        now,
+      });
+      const analysis = analyzeBuyerDemand(property, buyers, { buyerPoolTruncated: buyers.length === 100 });
+      const runId = crypto.randomUUID();
+      const revisedEvaluation = buildBuyerDemandEvaluation(
+        candidate.rawInput,
+        analysis,
+        runId,
+        now,
+        (raw, revisedEvaluationId) => evaluateOpportunity(raw, { now, evaluationId: revisedEvaluationId }),
+        crypto.randomUUID(),
+      );
+      const buyerMatch = await persistBuyerMatchRun(config, {
+        runId,
+        sourceEvaluationId: candidate.evaluationId,
+        propertyId: candidate.propertyId,
+        analyzedAt: now.toISOString(),
+        analysis,
+        revisedEvaluation,
+      });
+      return json({ buyerMatch, revisedEvaluationId: buyerMatch.revisedEvaluationId }, 201);
+    } catch (error) {
+      if (error instanceof SupabaseFeatureUnavailableError) {
+        return json({ error: "Apply the Phase 2 buyer-demand migration before matching buyers." }, 409);
       }
       throw error;
     }

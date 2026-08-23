@@ -28,6 +28,7 @@ export const propertyFactFields = [
   "lastSaleDate",
   "lastSalePrice",
   "occupancy",
+  "hoaStatus",
   "mailingAddress",
   "arvLow",
   "arvHigh",

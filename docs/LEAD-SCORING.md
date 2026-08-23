@@ -25,6 +25,8 @@ Below 70: Archive unless manually overridden
 
 Weights and thresholds must remain configurable.
 
-## Phase 2 buyer database boundary
+## Phase 2 buyer-demand model
 
-The buyer database now stores explicit buy boxes and observed buyer performance, but it does not yet feed this score. `buyerDemandScore` remains a provisional operator input until the next milestone can calculate explainable criteria matches and a probable buyer count from active, contact-eligible buyers. No profile count alone should be treated as demand.
+Initial manual and CSV evaluations may still carry a clearly labeled provisional `buyerDemandScore`. Once the operator runs buyer matching, `buyer-demand-v1` replaces that component in a new immutable evaluation.
+
+A probable buyer must be active, contact-eligible, credible, free of buy-box mismatches, and supported by all property evidence required by that buyer's constrained criteria. A missing property type, occupancy, HOA status, ZIP, timeline, square footage, or year built remains an explicit unknown and produces at most a possible match. The aggregate score weights probable-buyer breadth at 70% and average fit/credibility quality at 30%; zero probable buyers produces zero modeled demand. Criterion weights and the breadth curve are named in the matching engine and covered by tests.

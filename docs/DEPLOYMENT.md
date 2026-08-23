@@ -95,3 +95,24 @@ Then deploy or push the Worker release and verify:
 7. Confirm Supabase contains linked `buyers` and `buyer_criteria` rows plus a `BUYER_PROFILE` audit event.
 
 The API returns a migration notice until the schema is present. Opportunity evaluation, enrichment, and the existing dashboard remain available during the rollout window.
+
+## Phase 2 buyer-demand deployment
+
+After the buyer-database migration is present, apply:
+
+```text
+supabase/migrations/202608230004_phase2_buyer_demand_matching.sql
+```
+
+Then deploy or push the Worker release and verify:
+
+1. `GET /api/opportunities/buyer-matches?evaluationId=<persisted-evaluation-uuid>` returns `buyerMatchingAvailable: true` and either the latest analysis or `null`.
+2. Open a non-rejected opportunity and choose **Buyer demand**.
+3. Calculate demand and confirm the panel shows the modeled score, probable/possible/eligible counts, and criterion evidence for displayed matches.
+4. Confirm a constrained missing property fact is shown as unknown and does not contribute a probable buyer.
+5. Confirm a buyer outside county, ZIP, property type, price, ARV, repair, size, year, occupancy, HOA, or timeline constraints is excluded with a machine-readable reason.
+6. Refresh the opportunity queue and confirm a new evaluation appears with parser version `buyer-demand-v1` and the modeled buyer-demand component.
+7. Confirm Supabase contains one `buyer_match_runs` row, linked `buyer_matches`, the revised `opportunity_evaluations` row, and a `BUYER_MATCH_RUN` audit event.
+8. Repeat the same source-evaluation request and confirm it returns the existing run rather than adding another.
+
+The matching endpoint returns a migration notice until the schema is present. Existing evaluation, enrichment, and buyer-profile workflows remain available during rollout.

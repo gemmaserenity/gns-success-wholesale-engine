@@ -153,11 +153,31 @@ label.check input { width: 17px; min-height: 17px; accent-color: var(--red-rock)
 .history-row { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 12px; }
 .card-actions { display: flex; gap: 12px; }
 .history-button,
-.enrichment-button { border: 0; background: transparent; color: var(--red-rock); font: inherit; font-weight: 800; cursor: pointer; }
+.enrichment-button,
+.buyer-match-button { border: 0; background: transparent; color: var(--red-rock); font: inherit; font-weight: 800; cursor: pointer; }
 .history-button:disabled,
-.enrichment-button:disabled { opacity: .5; cursor: wait; }
+.enrichment-button:disabled,
+.buyer-match-button:disabled { opacity: .5; cursor: wait; }
 .history-list { margin-top: 16px; padding-top: 15px; border-top: 1px solid var(--line); }
 .enrichment-panel { margin-top: 16px; padding-top: 18px; border-top: 1px solid var(--line); }
+.buyer-match-panel { margin-top: 16px; padding-top: 18px; border-top: 1px solid var(--line); }
+.buyer-demand-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; margin-bottom: 12px; border: 1px solid var(--line); background: var(--line); }
+.buyer-demand-summary > div { padding: 11px 12px; background: var(--card); }
+.buyer-demand-summary span { display: block; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .06em; }
+.buyer-demand-summary strong { display: block; margin-top: 3px; color: var(--brown-strong); font-size: 16px; }
+.buyer-match-reasons { margin: 9px 0 14px; color: var(--muted); font-size: 11px; }
+.buyer-match-list { display: grid; gap: 9px; }
+.buyer-match-card { padding: 13px 14px; border: 1px solid var(--line); border-left: 4px solid var(--amber); background: #fcf9f5; }
+.buyer-match-card.match-probable { border-left-color: var(--orange); }
+.buyer-match-card.match-excluded { border-left-color: var(--red); }
+.buyer-match-card.match-ineligible { border-left-color: var(--muted); opacity: .82; }
+.buyer-match-card h5 { margin: 2px 0 0; color: var(--brown-strong); font: 600 17px Georgia, serif; }
+.match-scores { display: flex; gap: 16px; margin: 8px 0; color: var(--muted); font-size: 11px; }
+.match-scores strong { color: var(--ink); }
+.buyer-match-card ul { margin: 0; padding-left: 19px; color: var(--muted); font-size: 11px; }
+.criterion-unknown { color: var(--amber); }
+.criterion-mismatch { color: var(--red); }
+.criterion-match { color: var(--success); }
 .enrichment-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin-bottom: 14px; background: var(--line); border: 1px solid var(--line); }
 .enrichment-summary > div { padding: 10px 12px; background: var(--card); }
 .enrichment-summary span,
@@ -226,7 +246,8 @@ label.check input { width: 17px; min-height: 17px; accent-color: var(--red-rock)
   .decision { grid-template-columns: 1fr; }
   .queue-controls { grid-template-columns: 1fr 1fr; }
   .enrichment-source-grid,
-  .current-facts { grid-template-columns: repeat(2, 1fr); }
+  .current-facts,
+  .buyer-demand-summary { grid-template-columns: repeat(2, 1fr); }
   .fact-grid { grid-template-columns: repeat(3, 1fr); }
   .buyer-controls { grid-template-columns: 1fr 1fr; }
   body::before { opacity: .18; right: -120px; }
@@ -246,6 +267,7 @@ label.check input { width: 17px; min-height: 17px; accent-color: var(--red-rock)
   .queue-metrics,
   .queue-controls,
   .enrichment-summary,
+  .buyer-demand-summary,
   .enrichment-source-grid,
   .current-facts,
   .fact-grid,

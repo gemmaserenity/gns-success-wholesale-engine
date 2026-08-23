@@ -45,6 +45,8 @@ export const rawLeadSchema = z.object({
   propertyType: z.string().trim().max(80).optional(),
   squareFeet: optionalPositiveInteger,
   yearBuilt: optionalYear,
+  occupancy: z.string().trim().max(80).optional(),
+  hoaStatus: z.union([z.string().trim().max(80), z.boolean()]).optional(),
   arvLow: requiredNumber,
   arvHigh: requiredNumber,
   repairsLow: requiredNumber,

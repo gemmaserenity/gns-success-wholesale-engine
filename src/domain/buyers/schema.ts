@@ -72,3 +72,12 @@ export const buyerProfileInputSchema = z.object({
     ctx.addIssue({ code: "custom", path: ["contactStatus"], message: "DO_NOT_CONTACT status requires a matching contact status" });
   }
 });
+
+export const buyerProfileSchema = z.intersection(
+  buyerProfileInputSchema,
+  z.object({
+    id: z.string().uuid(),
+    createdAt: z.string().datetime({ offset: true }),
+    updatedAt: z.string().datetime({ offset: true }),
+  }),
+);

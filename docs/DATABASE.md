@@ -54,3 +54,9 @@ The restricted `persist_property_enrichment(jsonb, jsonb, jsonb)` function valid
 Migration `202608230003_phase2_buyer_database.sql` creates normalized `buyers` and `buyer_criteria` tables. A buyer profile records identity, contact information and standing, provenance, operating status, verified purchase and GNS closing counts, retrades, and an optional evidence-based reliability score. Criteria record counties, ZIPs, property types, purchase price, ARV, repair tolerance, size, year built, HOA preference, occupancy, close speed, and financing.
 
 The restricted `persist_buyer_profile(jsonb)` function creates or updates both records in one transaction and records an audit event. Profiles are never deleted through the application; operators use paused, archived, or do-not-contact states. The security-invoker `buyer_profiles` view provides one runtime-validated profile per buyer to the private Worker. This milestone does not create buyer matches or change opportunity scores.
+
+## Phase 2 buyer-demand matching
+
+Migration `202608230004_phase2_buyer_demand_matching.sql` creates immutable `buyer_match_runs` and criterion-level `buyer_matches`. Each run links its source evaluation, normalized property, model version, property snapshot, aggregate demand score, probable/possible/eligible counts, and the revised evaluation it produced. Each buyer result retains the buyer profile snapshot used at analysis time, fit and credibility scores, classification, reason codes, and every criterion outcome.
+
+`persist_buyer_match_run(jsonb, jsonb)` validates aggregate counts, verifies referenced buyers and the property/evaluation relationship, persists the new opportunity evaluation, stores the run and matches, and writes an audit event in one transaction. Repeating a source evaluation is idempotent. `latest_buyer_match_status` returns the newest auditable analysis for each property. The migration also permits `hoaStatus` as a structured property fact.

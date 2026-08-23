@@ -34,6 +34,7 @@ function renderEvaluation(item) {
 function renderOpportunity(item) {
   const style = item.state === "REJECTED" ? "reject" : item.nextAction === "HUMAN_REVIEW" ? "review" : "";
   const evaluatedAt = new Date(item.evaluatedAt).toLocaleString();
+  const buyerMatchAction = item.state === "REJECTED" ? "" : `<button class="buyer-match-button" type="button" data-evaluation-id="${escapeHtml(item.evaluationId)}" aria-expanded="false">Buyer demand</button>`;
   return `<article class="opportunity-card ${style}">
     <div class="opportunity-main">
       <div><p class="eyebrow">${escapeHtml(item.nextAction.replaceAll("_", " "))}</p><h4>${escapeHtml(item.address)}</h4><p>${escapeHtml(item.county)} · APN ${escapeHtml(item.apn)} · ${escapeHtml(item.ownerName)}</p></div>
@@ -45,7 +46,8 @@ function renderOpportunity(item) {
       <div><span>Confidence</span><strong>${escapeHtml(item.confidence)}</strong></div>
       <div><span>Last evaluated</span><strong>${escapeHtml(evaluatedAt)}</strong></div>
     </div>
-    <div class="history-row"><span>${item.historyCount} evaluation${item.historyCount === 1 ? "" : "s"} on record</span><div class="card-actions"><button class="enrichment-button" type="button" data-evaluation-id="${escapeHtml(item.evaluationId)}" aria-expanded="false">Property evidence</button><button class="history-button" type="button" data-county="${escapeHtml(item.county)}" data-apn="${escapeHtml(item.apn)}" aria-expanded="false">View history</button></div></div>
+    <div class="history-row"><span>${item.historyCount} evaluation${item.historyCount === 1 ? "" : "s"} on record</span><div class="card-actions">${buyerMatchAction}<button class="enrichment-button" type="button" data-evaluation-id="${escapeHtml(item.evaluationId)}" aria-expanded="false">Property evidence</button><button class="history-button" type="button" data-county="${escapeHtml(item.county)}" data-apn="${escapeHtml(item.apn)}" aria-expanded="false">View history</button></div></div>
+    <div class="buyer-match-panel hidden"></div>
     <div class="enrichment-panel hidden"></div>
     <div class="history-list hidden"></div>
   </article>`;
@@ -66,6 +68,7 @@ const enrichmentFields = [
   ["lastSaleDate", "Last sale date", "date"],
   ["lastSalePrice", "Last sale price", "number"],
   ["occupancy", "Occupancy", "text"],
+  ["hoaStatus", "HOA status", "text"],
   ["mailingAddress", "Owner mailing address", "text"],
   ["arvLow", "ARV low", "number"],
   ["arvHigh", "ARV high", "number"],
@@ -120,6 +123,57 @@ async function loadEnrichmentPanel(button, message = "") {
     }
     panel.innerHTML = renderEnrichmentPanel(button.dataset.evaluationId, body.enrichment, message);
     button.textContent = "Hide evidence";
+    button.setAttribute("aria-expanded", "true");
+  } catch (error) {
+    panel.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function buyerMatchClassLabel(classification) {
+  return classification.toLowerCase().replaceAll("_", " ");
+}
+
+function buyerCriterionLabel(criterion) {
+  return criterion.replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase();
+}
+
+function renderBuyerMatchPanel(evaluationId, status, message = "") {
+  const action = `<button class="primary run-buyer-match" type="button" data-evaluation-id="${escapeHtml(evaluationId)}">${status ? "Recalculate buyer demand" : "Calculate buyer demand"}</button>`;
+  if (!status) return `${message ? `<div class="success-message">${escapeHtml(message)}</div>` : ""}<p class="empty compact">No buyer-demand analysis has been recorded for this property.</p>${action}`;
+  const displayedMatches = status.matches;
+  const matchCards = displayedMatches.length
+    ? `<div class="buyer-match-list">${displayedMatches.map((match) => {
+      const evidence = match.criteria.filter((item) => item.outcome === "MISMATCH" || item.outcome === "UNKNOWN");
+      const details = evidence.length
+        ? evidence.map((item) => `<li class="criterion-${item.outcome.toLowerCase()}"><strong>${escapeHtml(buyerCriterionLabel(item.criterion))}</strong> — ${escapeHtml(item.detail)}</li>`).join("")
+        : '<li class="criterion-match">All constrained criteria matched recorded evidence.</li>';
+      return `<article class="buyer-match-card match-${match.classification.toLowerCase()}"><div><p class="eyebrow">${escapeHtml(buyerMatchClassLabel(match.classification))}</p><h5>${escapeHtml(match.buyerName)}</h5></div><div class="match-scores"><span>Fit <strong>${match.fitScore}</strong></span><span>Credibility <strong>${match.credibilityScore}</strong></span></div><ul>${details}</ul></article>`;
+    }).join("")}</div>`
+    : '<p class="empty compact">No active buyer profiles were available for this analysis.</p>';
+  const gaps = status.reasonCodes.length ? status.reasonCodes.map((code) => escapeHtml(code.replaceAll("_", " "))).join(" · ") : "No aggregate warnings";
+  return `${message ? `<div class="success-message">${escapeHtml(message)}</div>` : ""}
+    <div class="section-heading compact-heading"><h4>Explainable buyer demand</h4><p>${escapeHtml(status.modelVersion)} · ${escapeHtml(new Date(status.analyzedAt).toLocaleString())}</p></div>
+    <div class="buyer-demand-summary"><div><span>Demand score</span><strong>${status.buyerDemandScore}/100</strong></div><div><span>Probable buyers</span><strong>${status.probableBuyerCount}</strong></div><div><span>Possible buyers</span><strong>${status.possibleBuyerCount}</strong></div><div><span>Contact-eligible</span><strong>${status.eligibleBuyerCount}/${status.evaluatedBuyerCount}</strong></div></div>
+    <p class="buyer-match-reasons"><strong>Model result:</strong> ${gaps}</p>
+    ${matchCards}${action}`;
+}
+
+async function loadBuyerMatchPanel(button, message = "") {
+  const panel = button.closest(".opportunity-card").querySelector(".buyer-match-panel");
+  panel.classList.remove("hidden");
+  panel.innerHTML = '<p class="loading">Loading buyer-demand analysis…</p>';
+  button.disabled = true;
+  try {
+    const params = new URLSearchParams({ evaluationId: button.dataset.evaluationId });
+    const body = await send(`/api/opportunities/buyer-matches?${params}`, {});
+    if (body.buyerMatchingAvailable === false) {
+      panel.innerHTML = '<div class="empty">Apply the buyer-demand migration before calculating matches.</div>';
+      return;
+    }
+    panel.innerHTML = renderBuyerMatchPanel(button.dataset.evaluationId, body.buyerMatch, message);
+    button.textContent = "Hide buyer demand";
     button.setAttribute("aria-expanded", "true");
   } catch (error) {
     panel.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
@@ -352,6 +406,35 @@ $("#queue-state").addEventListener("change", loadOpportunities);
 $("#queue-county").addEventListener("change", loadOpportunities);
 
 $("#opportunity-list").addEventListener("click", async (event) => {
+  const buyerMatchButton = event.target.closest(".buyer-match-button");
+  if (buyerMatchButton) {
+    const panel = buyerMatchButton.closest(".opportunity-card").querySelector(".buyer-match-panel");
+    if (!panel.classList.contains("hidden")) {
+      panel.classList.add("hidden");
+      buyerMatchButton.textContent = "Buyer demand";
+      buyerMatchButton.setAttribute("aria-expanded", "false");
+    } else {
+      await loadBuyerMatchPanel(buyerMatchButton);
+    }
+    return;
+  }
+  const runBuyerMatchButton = event.target.closest(".run-buyer-match");
+  if (runBuyerMatchButton) {
+    runBuyerMatchButton.disabled = true;
+    try {
+      const body = await send("/api/opportunities/buyer-matches", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ evaluationId: runBuyerMatchButton.dataset.evaluationId }),
+      });
+      const toggle = runBuyerMatchButton.closest(".opportunity-card").querySelector(".buyer-match-button");
+      await loadBuyerMatchPanel(toggle, `Recorded ${body.buyerMatch.probableBuyerCount} probable buyer${body.buyerMatch.probableBuyerCount === 1 ? "" : "s"} and a ${body.buyerMatch.buyerDemandScore}/100 demand score. Refresh the queue to see the new immutable evaluation.`);
+    } catch (error) {
+      runBuyerMatchButton.closest(".buyer-match-panel").insertAdjacentHTML("afterbegin", `<div class="error">${escapeHtml(error.message)}</div>`);
+      runBuyerMatchButton.disabled = false;
+    }
+    return;
+  }
   const enrichmentButton = event.target.closest(".enrichment-button");
   if (enrichmentButton) {
     const panel = enrichmentButton.closest(".opportunity-card").querySelector(".enrichment-panel");

@@ -83,3 +83,17 @@ The profile distinguishes active, paused, archived, and do-not-contact states. A
 ### No inferred demand before matching evidence exists
 
 Creating a buyer database does not retroactively validate the provisional buyer-demand score. The existing opportunity score remains unchanged until a later deterministic matcher can show which active buyers fit, why they fit, and how many credible buyers exist.
+
+## 2026-08-23 — Explainable buyer-demand scoring
+
+### Probable demand requires fit, contact eligibility, and credibility
+
+An active profile counts as a probable buyer only when it has relationship or opt-in contact standing, no buy-box mismatch, no missing evidence for a constrained criterion, and a credibility score of at least 50. Missing evidence creates a possible match; it is never silently counted as probable demand. Paused, archived, do-not-contact, and unverified-contact profiles cannot contribute probable demand.
+
+### Breadth and quality determine demand
+
+`buyer-demand-v1` combines the number of probable buyers with their average fit and credibility. The score is therefore not a raw buyer-table count. Buyer-level fit uses county, ZIP, property type, target disposition price, ARV, repairs, square footage, year built, occupancy, HOA tolerance, and execution time when constrained. Financing and observed performance remain visible evidence; performance and contact standing determine credibility.
+
+### Matching creates immutable history
+
+A match run snapshots both property inputs and buyer profiles, then creates a new opportunity evaluation with the modeled buyer-demand score. It never edits the source evaluation. One source evaluation can produce only one run, making retries idempotent while a later evaluation can be intentionally recalculated against updated evidence or buyer profiles.

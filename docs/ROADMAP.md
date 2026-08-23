@@ -31,7 +31,7 @@ Add:
 - [x] durable opportunity queue and evaluation history
 - [x] improved property enrichment with explicit confidence and cost gates
 - [x] buyer database with explicit buy boxes and contact standing
-- [ ] buyer-demand scoring
+- [x] explainable buyer-demand scoring and probable-buyer counts
 - selective skip tracing
 - seller-facing portal
 - inbound seller qualification

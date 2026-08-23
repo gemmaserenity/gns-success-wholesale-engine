@@ -30,7 +30,7 @@ See `/docs` for architecture and implementation documentation.
 
 ## Phase 2 operational milestone
 
-Phase 2 now includes a durable opportunity desk, gated property-evidence workflow, and buyer database:
+Phase 2 now includes a durable opportunity desk, gated property-evidence workflow, buyer database, and explainable buyer-demand matching:
 
 - normalized property, owner, ownership, distress-event, evaluation, pipeline, and audit records persist in one database transaction;
 - repeated evaluation requests are idempotent;
@@ -41,10 +41,13 @@ Phase 2 now includes a durable opportunity desk, gated property-evidence workflo
 - underwriting facts create a new immutable evaluation instead of silently changing an existing score;
 - buyer profiles preserve contact standing, source, observed performance, and explicit county/ZIP/property/economic buy-box criteria;
 - buyer updates are auditable and records are paused, archived, or marked do-not-contact instead of deleted;
+- buyer matching compares recorded property evidence with active, contact-eligible buy boxes and separates probable, possible, excluded, and ineligible results;
+- each match retains criterion-level outcomes, a buyer snapshot, credibility evidence, probable-buyer count, and model version;
+- a modeled buyer-demand score creates a new immutable opportunity evaluation rather than overwriting provisional input;
 - database responses are runtime-validated before they reach the browser;
 - a rolling-release fallback preserves Phase 1 writes until the Phase 2 migration is applied.
 
-Apply the migrations in `supabase/migrations/` in filename order. Buyer profiles require `202608230003_phase2_buyer_database.sql`. See [`docs/PHASE-2-MILESTONE-1.md`](docs/PHASE-2-MILESTONE-1.md) for the earlier durable-desk handoff and [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for current deployment checks.
+Apply the migrations in `supabase/migrations/` in filename order. Buyer-demand matching requires `202608230004_phase2_buyer_demand_matching.sql`. See [`docs/PHASE-2-MILESTONE-1.md`](docs/PHASE-2-MILESTONE-1.md) for the earlier durable-desk handoff and [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for current deployment checks.
 
 ## Phase 1 foundation
 

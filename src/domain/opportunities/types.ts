@@ -27,6 +27,8 @@ export interface RawLeadInput {
   propertyType?: string | undefined;
   squareFeet?: number | undefined;
   yearBuilt?: number | undefined;
+  occupancy?: string | undefined;
+  hoaStatus?: string | boolean | undefined;
   arvLow: number;
   arvHigh: number;
   repairsLow: number;
