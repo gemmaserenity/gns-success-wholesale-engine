@@ -26,11 +26,11 @@ A `.env.example` file documents expected variable names without storing credenti
 3. Set the Worker secrets interactively:
 
    ```bash
-   npx wrangler secret put SUPABASE_URL --env production
-   npx wrangler secret put SUPABASE_SECRET_KEY --env production
+   npx wrangler secret put SUPABASE_URL
+   npx wrangler secret put SUPABASE_SECRET_KEY
    ```
 
-4. Validate with `npm run build`, then deploy with `npx wrangler deploy --env production`.
+4. Validate with `npm run build`, then deploy with `npx wrangler deploy`.
 5. Attach the `wholesale.gns-success.com` custom domain in Cloudflare.
 
 `SUPABASE_SECRET_KEY` must be a modern key from Supabase **Settings → API Keys → Secret keys** with the `sb_secret_` prefix. The legacy JWT-based `service_role` key, `anon` key, publishable key, and JWT signing secret are not accepted. This secret is Worker-only: never add it to browser code, a tracked file, or a command argument. Production requests are denied unless they arrive with Cloudflare Access's authenticated assertion header. Local development uses blank values in ignored `.dev.vars` and remains stateless.

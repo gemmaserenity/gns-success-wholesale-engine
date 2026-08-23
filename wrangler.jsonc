@@ -4,6 +4,8 @@
   "main": "workers/api/index.ts",
   "compatibility_date": "2026-08-22",
   "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "preview_urls": false,
   "assets": {
     "binding": "ASSETS",
     "directory": "./apps/dashboard/public",
@@ -15,16 +17,7 @@
     "head_sampling_rate": 1
   },
   "vars": {
-    "ENVIRONMENT": "development",
+    "ENVIRONMENT": "production",
     "MAX_CSV_BYTES": "2097152"
-  },
-  "env": {
-    "production": {
-      "name": "gns-success-wholesale-engine-production",
-      "vars": {
-        "ENVIRONMENT": "production",
-        "MAX_CSV_BYTES": "2097152"
-      }
-    }
   }
 }
