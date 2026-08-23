@@ -64,3 +64,5 @@ npm run build
 ```
 
 Production deployment and secret setup are documented in `docs/DEPLOYMENT.md`.
+
+For a complete operational recap, system map, usage guide, and Phase 2 handoff, read [`docs/PHASE-1-SESSION-NOTE.md`](docs/PHASE-1-SESSION-NOTE.md).
