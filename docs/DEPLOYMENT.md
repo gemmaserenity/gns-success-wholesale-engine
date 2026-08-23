@@ -140,3 +140,37 @@ Then deploy or push the Worker release and verify:
 9. Confirm there is no network request to an external data provider and no call, text, email, or mail action.
 
 The API returns a migration notice until the schema is present. Existing opportunity, enrichment, buyer, and matching workflows remain available during rollout.
+
+## Phase 2 seller-intake deployment
+
+After selective skip tracing is present, apply:
+
+```text
+supabase/migrations/202608230006_phase2_seller_intake.sql
+```
+
+The Worker configuration declares `wholesale.gns-success.com` and `sell.gns-success.com` as custom domains. The seller hostname serves only public seller assets and `POST /api/seller/intake`; the private hostname and APIs remain behind Cloudflare Access.
+
+Configure these encrypted Worker secrets without committing their values:
+
+```text
+CALCOM_API_KEY
+RESEND_API_KEY
+OPERATOR_NOTIFICATION_EMAIL
+```
+
+`RESEND_FROM_EMAIL` defaults to `GNS Success <offers@gns-success.com>` and requires `gns-success.com` to be verified in Resend. If the Cal.com account has more than one public event type, set the non-secret `CALCOM_EVENT_TYPE_ID` to the seller-call event ID or set `CALCOM_SELLER_BOOKING_URL` to its public URL. A sole public event type or one unambiguous seller-related event resolves automatically.
+
+Then deploy or push the Worker release and verify:
+
+1. `https://sell.gns-success.com` loads without Cloudflare Access while `https://wholesale.gns-success.com` remains protected.
+2. Private API paths on the seller hostname return 401.
+3. A honeypot submission, a sub-two-second submission, and the eleventh submission from one client within a minute are rejected.
+4. A representative valid inquiry stores one `seller_inquiries` row, one `seller_qualification_assessments` row, three channel consent events, one `NEW` status event, and a PII-minimized audit event.
+5. A qualified inquiry returns a Cal.com booking link; confirm the Cal.com event-type lookup contains no seller data.
+6. When email permission is checked, Resend records one seller acknowledgement and one internal operator notice. Retry the same submission UUID and confirm no duplicate message is sent.
+7. When email permission is not checked, no seller email is sent. Confirm calls and texts are never initiated.
+8. In **Seller inquiries**, confirm the assessment reasons, consented channels, booking offer, and provider delivery outcomes are visible.
+9. Record an operator status with rationale and confirm a new status event appears without modifying the original inquiry or initiating outreach.
+
+Do not submit real seller information during deployment testing unless the person has knowingly provided it for this workflow. Use an operator-controlled test address and clearly synthetic property details.

@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Share information about an Arizona property with GNS Success and request a private conversation.">
+  <meta name="theme-color" content="#fffaf4">
+  <title>Sell Your Arizona Property | GNS Success</title>
+  <link rel="stylesheet" href="/seller/seller.css">
+</head>
+<body>
+  <header class="seller-topbar">
+    <a class="seller-brand" href="/" aria-label="GNS Success seller home"><span aria-hidden="true">GNS</span><strong>GNS Success</strong></a>
+    <p>Arizona property conversations</p>
+  </header>
+
+  <main>
+    <section class="seller-hero">
+      <div>
+        <p class="eyebrow">A PRIVATE, NO-PRESSURE START</p>
+        <h1>Tell us about the property.</h1>
+        <p class="lead">Share what you know. We’ll review the situation and, when it looks like a fit, you can choose a time for a private call.</p>
+        <ul>
+          <li>No obligation to accept an offer</li>
+          <li>No fee to submit property information</li>
+          <li>You choose how GNS Success may contact you</li>
+        </ul>
+      </div>
+      <aside><strong>What happens next?</strong><ol><li>You share the basics.</li><li>Our team reviews the property and your timeline.</li><li>Qualified submissions can book a call.</li></ol></aside>
+    </section>
+
+    <section class="seller-card" id="intake-card">
+      <div class="section-title"><p class="eyebrow">PROPERTY INTAKE</p><h2>Start with what you know</h2><p>Fields marked required help us understand whether we may be able to help.</p></div>
+      <form id="seller-intake-form">
+        <div class="form-section">
+          <h3>You and the property</h3>
+          <div class="form-grid">
+            <label>Your name <input name="name" autocomplete="name" required maxlength="160"></label>
+            <label>Your relationship to the property <select name="relationship" required><option value="OWNER">Owner</option><option value="CO_OWNER">Co-owner</option><option value="AUTHORIZED_REPRESENTATIVE">Authorized representative</option><option value="OTHER">Other / not sure</option></select></label>
+            <label class="wide">Property address <input name="propertyAddress" autocomplete="street-address" required maxlength="300" placeholder="Street, city, Arizona ZIP"></label>
+            <label>County <select name="county" required><option value="MARICOPA">Maricopa County</option><option value="PINAL">Pinal County</option><option value="OTHER_ARIZONA">Another Arizona county</option><option value="UNKNOWN">Not sure</option><option value="OUTSIDE_ARIZONA">Outside Arizona</option></select></label>
+            <label>Parcel number (optional) <input name="apn" maxlength="80" placeholder="APN"></label>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3>Your situation</h3>
+          <div class="form-grid">
+            <label>Ideal timeline <select name="timeline" required><option value="0_30_DAYS">Within 30 days</option><option value="31_60_DAYS">31–60 days</option><option value="61_90_DAYS">61–90 days</option><option value="OVER_90_DAYS">More than 90 days</option><option value="UNSURE">I’m not sure</option></select></label>
+            <label>Main reason for exploring a sale <select name="motivation" required><option value="REPAIRS">Property needs repairs</option><option value="FORECLOSURE">Foreclosure concern</option><option value="INHERITED">Inherited property</option><option value="VACANT">Vacant property</option><option value="RELOCATION">Relocation</option><option value="FINANCIAL">Financial change</option><option value="LANDLORD">Landlord / tenant situation</option><option value="OTHER">Another reason</option></select></label>
+            <label>Property condition <select name="condition" required><option value="MAJOR_REPAIRS">Major repairs needed</option><option value="MODERATE_REPAIRS">Some repairs needed</option><option value="LIGHT_REPAIRS">Mostly cosmetic work</option><option value="MOVE_IN_READY">Move-in ready</option><option value="UNKNOWN">Not sure</option></select></label>
+            <label>Occupancy <select name="occupancy" required><option value="OWNER_OCCUPIED">Owner occupied</option><option value="TENANT_OCCUPIED">Tenant occupied</option><option value="VACANT">Vacant</option><option value="OTHER">Other</option><option value="UNKNOWN">Not sure</option></select></label>
+            <label>Price you have in mind (optional) <input name="askingPrice" type="number" min="0" max="100000000" inputmode="numeric"></label>
+            <label>Approximate mortgage balance (optional) <input name="mortgageBalance" type="number" min="0" max="100000000" inputmode="numeric"></label>
+            <label class="wide">Anything else we should know? <textarea name="notes" maxlength="2000" rows="5" placeholder="Repairs, deadlines, title questions, access, or other context"></textarea></label>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3>How to reach you</h3>
+          <p class="section-copy">Providing contact information does not automatically give permission to use it. Select only the methods you want.</p>
+          <div class="form-grid">
+            <label>Email address <input name="email" type="email" autocomplete="email" maxlength="254"></label>
+            <label>Phone number <input name="phone" type="tel" autocomplete="tel" maxlength="40"></label>
+          </div>
+          <fieldset class="consent-list"><legend>Contact permissions</legend>
+            <label><input name="consentEmail" type="checkbox"> Email me a confirmation and follow up about this property.</label>
+            <label><input name="consentCall" type="checkbox"> GNS Success may call me about this property.</label>
+            <label><input name="consentText" type="checkbox"> GNS Success may text me about this property. Message and data rates may apply; reply STOP to opt out. Consent is not a condition of an offer.</label>
+          </fieldset>
+          <label class="privacy-check"><input name="privacyAccepted" type="checkbox" required> I understand GNS Success will use this information to evaluate my property inquiry and keep an auditable record of my permissions. This submission is not a purchase offer, contract, appraisal, or promise to buy.</label>
+          <div class="website-field" aria-hidden="true" hidden><label>Company website<input name="companyWebsite" tabindex="-1" autocomplete="off"></label></div>
+        </div>
+
+        <button class="submit-button" type="submit">Send property information</button>
+        <p class="fine-print">By submitting, you confirm the information is yours to share. GNS Success does not initiate calls, texts, or emails through this form unless the matching permission is selected.</p>
+        <div id="form-feedback" aria-live="polite"></div>
+      </form>
+    </section>
+
+    <section class="seller-card result-card hidden" id="seller-result" aria-live="polite"></section>
+  </main>
+  <footer><p>© 2026 GNS Success · Arizona</p><p>This website is for property inquiries and is not legal, tax, lending, or appraisal advice.</p></footer>
+  <script type="module" src="/seller/seller.js"></script>
+</body>
+</html>

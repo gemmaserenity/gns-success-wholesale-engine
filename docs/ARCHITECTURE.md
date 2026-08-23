@@ -46,6 +46,10 @@ Buyer-demand matching is an explicit operator action on a persisted, non-rejecte
 
 Selective skip tracing is a provider-neutral research boundary, not a vendor adapter. One persisted evaluation can open one case only after deterministic checks of qualification, score, base spread, owner confidence, public-record/contact-standing review, suppression, privacy rationale, and bounded cost. Completed findings retain immutable provenance and cost evidence; seller contact standing is append-only and separate. The app transmits nothing to a provider, contact existence never becomes permission, and no outreach API exists.
 
+The seller-acquisition boundary uses a separate public hostname and one public intake endpoint. Each inbound submission is idempotent and transactionally stores the seller-authored facts, `seller-intake-v1` assessment, explicit per-channel consent, initial status, optional Cal.com offer, and minimized audit evidence. Private operators review inquiries and append status events; they never edit or delete the original submission.
+
+Cal.com is queried only to resolve the configured public booking link, without transmitting seller data. Resend sends a seller acknowledgement only when email permission was selected and sends a PII-minimized internal notification. Delivery outcomes are append-only. No call, text, or AI-provider adapter is activated.
+
 ### GitHub
 
 GitHub is the canonical source repository and deployment history.

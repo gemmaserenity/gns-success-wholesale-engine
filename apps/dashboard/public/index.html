@@ -49,6 +49,7 @@
       <button class="tab" data-tab="csv">CSV batch</button>
       <button class="tab" data-tab="opportunities">Opportunity queue</button>
       <button class="tab" data-tab="buyers">Buyer database</button>
+      <button class="tab" data-tab="sellers">Seller inquiries</button>
     </nav>
 
     <section id="manual-panel" class="panel">
@@ -164,6 +165,17 @@
         </form>
         <div id="buyer-list" aria-live="polite"></div>
       </div>
+    </section>
+
+    <section id="sellers-panel" class="panel hidden">
+      <div class="section-heading"><h3>Seller inquiry desk</h3><p>Inbound property submissions, deterministic qualification, explicit contact permissions, booking offers, and delivery evidence.</p></div>
+      <div class="seller-controls">
+        <label>Status<select id="seller-status-filter"><option value="">All statuses</option><option value="NEW">New</option><option value="REVIEWING">Reviewing</option><option value="CONTACTED">Contacted</option><option value="APPOINTMENT_SET">Appointment set</option><option value="CLOSED">Closed</option></select></label>
+        <label>Qualification<select id="seller-tier-filter"><option value="">All tiers</option><option value="PRIORITY">Priority</option><option value="REVIEW">Review</option><option value="NURTURE">Nurture</option><option value="INELIGIBLE">Ineligible</option></select></label>
+        <button id="refresh-sellers" class="secondary" type="button">Refresh inquiries</button>
+        <a class="secondary seller-portal-link" href="https://sell.gns-success.com" target="_blank" rel="noopener noreferrer">Open seller portal</a>
+      </div>
+      <div id="seller-inquiry-list" aria-live="polite"></div>
     </section>
 
     <section id="results" aria-live="polite"></section>

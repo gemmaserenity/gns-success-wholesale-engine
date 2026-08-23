@@ -111,3 +111,21 @@ Skip-trace findings are immutable evidence. Seller contact standing is an append
 ### Suppression is enforced before further enrichment
 
 The database independently checks the latest owner standing and refuses a new skip-trace case when it is do not contact. Audit payloads record case and control metadata without duplicating contact values.
+
+## 2026-08-23 — Public seller intake and scheduling
+
+### Public acquisition and private operations use separate hostnames
+
+`sell.gns-success.com` exposes only seller assets and the bounded intake write. `wholesale.gns-success.com` remains the private operator application behind Cloudflare Access. Private APIs return 401 on the public seller hostname.
+
+### Inbound contact information is not blanket permission
+
+The portal stores separate email, call, and text decisions, including negative consent evidence. Only an explicitly requested acknowledgement email is automated. No calling or texting adapter exists, and changing an inquiry status does not contact the seller.
+
+### Scheduling is offered without server-side booking
+
+The Worker resolves an eligible event's public Cal.com URL without seller data. The seller voluntarily leaves the portal to schedule. This avoids silently creating an appointment or sending personal information to Cal.com.
+
+### Provider deliveries are minimized and idempotent
+
+Resend acknowledgements use a stable idempotency key. Internal alerts include only an inquiry reference, county, and qualification routing result, directing the operator to the Access-protected dashboard for PII.

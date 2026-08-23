@@ -30,7 +30,7 @@ See `/docs` for architecture and implementation documentation.
 
 ## Phase 2 operational milestone
 
-Phase 2 now includes a durable opportunity desk, gated property-evidence workflow, buyer database, explainable buyer-demand matching, and selective skip tracing:
+Phase 2 now includes a durable opportunity desk, gated property-evidence workflow, buyer database, explainable buyer-demand matching, selective skip tracing, and public seller intake:
 
 - normalized property, owner, ownership, distress-event, evaluation, pipeline, and audit records persist in one database transaction;
 - repeated evaluation requests are idempotent;
@@ -50,9 +50,13 @@ Phase 2 now includes a durable opportunity desk, gated property-evidence workflo
 - selective skip tracing opens only one qualified, 80+ score, $10,000+ spread, owner-confident opportunity at a time;
 - each contact-research case records necessity, privacy minimization, intended source, bounded cost, provenance, and immutable findings;
 - contact standing is append-only and separate from contact data, with do-not-contact suppression and explicit eligible channels;
-- no provider adapter, bulk endpoint, external transmission, or outreach action is present.
+- the skip-tracing boundary has no provider adapter, bulk endpoint, external transmission, or outreach action;
+- a separate public seller portal records inbound property facts, deterministic qualification, and explicit channel permissions without exposing the private dashboard;
+- eligible sellers receive a Cal.com booking option without the Worker sending seller data to Cal.com;
+- Resend sends consented transactional acknowledgements and PII-minimized operator notifications with idempotent delivery evidence;
+- seller submissions, consent, status, appointment offers, and delivery history are append-only and auditable.
 
-Apply the migrations in `supabase/migrations/` in filename order. Selective skip tracing requires `202608230005_phase2_selective_skip_tracing.sql`. See [`docs/PHASE-2-SELECTIVE-SKIP-TRACING.md`](docs/PHASE-2-SELECTIVE-SKIP-TRACING.md) for the operational boundary and [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for current deployment checks.
+Apply the migrations in `supabase/migrations/` in filename order. Seller intake requires `202608230006_phase2_seller_intake.sql`. See [`docs/PHASE-2-SELLER-INTAKE.md`](docs/PHASE-2-SELLER-INTAKE.md) for the public acquisition boundary and [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for current deployment checks.
 
 ## Phase 1 foundation
 

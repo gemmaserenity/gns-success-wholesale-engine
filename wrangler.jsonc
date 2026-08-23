@@ -6,6 +6,10 @@
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": false,
   "preview_urls": false,
+  "routes": [
+    { "pattern": "wholesale.gns-success.com", "custom_domain": true },
+    { "pattern": "sell.gns-success.com", "custom_domain": true }
+  ],
   "assets": {
     "binding": "ASSETS",
     "directory": "./apps/dashboard/public",
@@ -16,10 +20,31 @@
     "enabled": true,
     "head_sampling_rate": 1
   },
+  "ratelimits": [
+    {
+      "name": "SELLER_INTAKE_RATE_LIMIT",
+      "namespace_id": "240823006",
+      "simple": { "limit": 10, "period": 60 }
+    }
+  ],
   "vars": {
     "ENVIRONMENT": "production",
     "MAX_CSV_BYTES": "2097152",
     "MAX_PAID_ENRICHMENT_CENTS": "500",
-    "MAX_SKIP_TRACE_CENTS": "1000"
+    "MAX_SKIP_TRACE_CENTS": "1000",
+    "SELLER_PORTAL_HOST": "sell.gns-success.com",
+    "SELLER_PORTAL_URL": "https://sell.gns-success.com",
+    "CALCOM_EVENT_TYPE_ID": "",
+    "CALCOM_SELLER_BOOKING_URL": "",
+    "RESEND_FROM_EMAIL": "GNS Success <offers@gns-success.com>"
+  },
+  "secrets": {
+    "required": [
+      "SUPABASE_URL",
+      "SUPABASE_SECRET_KEY",
+      "CALCOM_API_KEY",
+      "RESEND_API_KEY",
+      "OPERATOR_NOTIFICATION_EMAIL"
+    ]
   }
 }

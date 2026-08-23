@@ -170,6 +170,7 @@ document.querySelectorAll(".tab").forEach((tab) => tab.addEventListener("click",
   $("#results").innerHTML = "";
   if (tab.dataset.tab === "opportunities") loadOpportunities();
   if (tab.dataset.tab === "buyers") loadBuyers();
+  if (tab.dataset.tab === "sellers") loadSellerInquiries();
 }));
 
 function escapeHtml(value) {
@@ -501,6 +502,57 @@ async function loadBuyers(message = "") {
     list.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
   }
 }
+
+function renderSellerInquiry(inquiry) {
+  const permission = [inquiry.consentEmail ? "EMAIL" : "", inquiry.consentCall ? "CALL" : "", inquiry.consentText ? "TEXT" : ""].filter(Boolean);
+  const delivery = inquiry.deliveryStatuses.length ? inquiry.deliveryStatuses.map((item) => `${item.kind.replaceAll("_", " ")}: ${item.status}`).join(" · ") : "No delivery attempts recorded";
+  const tierClass = inquiry.qualification.tier === "PRIORITY" ? "seller-priority" : inquiry.qualification.tier === "INELIGIBLE" ? "seller-ineligible" : "";
+  return `<article class="seller-inquiry-card ${tierClass}">
+    <div class="seller-inquiry-header"><div><p class="eyebrow">${escapeHtml(inquiry.qualification.tier)} · ${escapeHtml(inquiry.status.replaceAll("_", " "))}</p><h4>${escapeHtml(inquiry.propertyAddress)}</h4><p>${escapeHtml(inquiry.name)} · ${escapeHtml(inquiry.county.replaceAll("_", " "))} · ${escapeHtml(new Date(inquiry.submittedAt).toLocaleString())}</p></div><div class="score"><strong>${inquiry.qualification.score}</strong><span>/ 100 · INTAKE</span></div></div>
+    <div class="seller-inquiry-grid"><div><span>Timeline</span><strong>${escapeHtml(inquiry.timeline.replaceAll("_", " "))}</strong></div><div><span>Situation</span><strong>${escapeHtml(inquiry.motivation.replaceAll("_", " "))}</strong></div><div><span>Condition</span><strong>${escapeHtml(inquiry.condition.replaceAll("_", " "))}</strong></div><div><span>Occupancy</span><strong>${escapeHtml(inquiry.occupancy.replaceAll("_", " "))}</strong></div></div>
+    <div class="seller-contact-evidence"><p><strong>Contact:</strong> ${escapeHtml([inquiry.email, inquiry.phone].filter(Boolean).join(" · ") || "None")}</p><p><strong>Authorized channels:</strong> ${escapeHtml(permission.join(" · ") || "None — do not initiate outreach")}</p><p><strong>Relationship:</strong> ${escapeHtml(inquiry.relationship.replaceAll("_", " "))}${inquiry.apn ? ` · <strong>APN:</strong> ${escapeHtml(inquiry.apn)}` : ""}</p><p><strong>Asking / mortgage:</strong> ${inquiry.askingPrice === undefined ? "Not provided" : money.format(inquiry.askingPrice)} / ${inquiry.mortgageBalance === undefined ? "Not provided" : money.format(inquiry.mortgageBalance)}</p>${inquiry.notes ? `<p><strong>Seller notes:</strong> ${escapeHtml(inquiry.notes)}</p>` : ""}<p><strong>Assessment:</strong> ${escapeHtml(inquiry.qualification.summary)}</p><p><strong>Review flags:</strong> ${escapeHtml(inquiry.qualification.reviewFlags.join(" · ") || "None")}</p><p><strong>Delivery:</strong> ${escapeHtml(delivery)}</p>${inquiry.bookingUrl ? `<p><strong>Cal.com:</strong> Booking link offered</p>` : ""}</div>
+    <form class="seller-status-form" data-inquiry-id="${escapeHtml(inquiry.id)}"><label>Record status<select name="status"><option value="NEW" ${inquiry.status === "NEW" ? "selected" : ""}>New</option><option value="REVIEWING" ${inquiry.status === "REVIEWING" ? "selected" : ""}>Reviewing</option><option value="CONTACTED" ${inquiry.status === "CONTACTED" ? "selected" : ""}>Contacted</option><option value="APPOINTMENT_SET" ${inquiry.status === "APPOINTMENT_SET" ? "selected" : ""}>Appointment set</option><option value="CLOSED" ${inquiry.status === "CLOSED" ? "selected" : ""}>Closed</option></select></label><label class="rationale">Rationale<input name="rationale" required minlength="10" maxlength="1000" placeholder="What changed and what evidence supports it?"></label><button class="secondary" type="submit">Record status</button><div class="seller-status-feedback" aria-live="polite"></div></form>
+  </article>`;
+}
+
+async function loadSellerInquiries(message = "") {
+  const list = $("#seller-inquiry-list");
+  list.innerHTML = '<p class="loading">Loading seller inquiries…</p>';
+  const params = new URLSearchParams({ limit: "50" });
+  if ($("#seller-status-filter").value) params.set("status", $("#seller-status-filter").value);
+  if ($("#seller-tier-filter").value) params.set("tier", $("#seller-tier-filter").value);
+  try {
+    const body = await send(`/api/seller/inquiries?${params}`, {});
+    if (body.sellerIntakeAvailable === false) {
+      list.innerHTML = '<div class="empty">Apply the Phase 2 seller-intake migration before receiving public inquiries.</div>';
+      return;
+    }
+    list.innerHTML = `${message ? `<div class="success-message">${escapeHtml(message)}</div>` : ""}${body.inquiries.length ? body.inquiries.map(renderSellerInquiry).join("") : '<div class="empty">No seller inquiries match these filters.</div>'}`;
+  } catch (error) {
+    list.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
+  }
+}
+
+$("#refresh-sellers").addEventListener("click", () => loadSellerInquiries());
+$("#seller-status-filter").addEventListener("change", () => loadSellerInquiries());
+$("#seller-tier-filter").addEventListener("change", () => loadSellerInquiries());
+$("#seller-inquiry-list").addEventListener("submit", async (event) => {
+  const form = event.target.closest(".seller-status-form");
+  if (!form) return;
+  event.preventDefault();
+  const button = event.submitter;
+  const feedback = form.querySelector(".seller-status-feedback");
+  button.disabled = true;
+  feedback.innerHTML = "";
+  try {
+    const data = Object.fromEntries(new FormData(form));
+    const body = await send("/api/seller/inquiries/status", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ inquiryId: form.dataset.inquiryId, status: data.status, rationale: data.rationale }) });
+    await loadSellerInquiries(`${body.inquiry.status.replaceAll("_", " ")} status recorded. No outreach was initiated by this action.`);
+  } catch (error) {
+    feedback.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
+    button.disabled = false;
+  }
+});
 
 function checkedValues(form, name) {
   return [...form.querySelectorAll(`[name="${name}"]:checked`)].map((input) => input.value);

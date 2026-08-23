@@ -66,3 +66,9 @@ Migration `202608230004_phase2_buyer_demand_matching.sql` creates immutable `buy
 Migration `202608230005_phase2_selective_skip_tracing.sql` creates single-opportunity `skip_trace_cases`, immutable `skip_trace_findings`, and append-only `seller_contact_standing_events`. `create_skip_trace_case(jsonb, jsonb)` rechecks the persisted opportunity, current owner interest, 80+ score, $10,000+ base spread, 0.65+ owner confidence, cost ceiling, attestations, research-only boundary, and owner-level do-not-contact suppression. One source evaluation can create only one case.
 
 `persist_skip_trace_result(jsonb)` validates evidence count and cost allocation, closes the case, defaults previously unreviewed owners to unknown standing, and writes a PII-minimized audit event. `record_seller_contact_standing(jsonb)` appends a separate standing event and requires explicit channels for consent or an existing relationship. `latest_skip_trace_status` returns the latest case, findings, and current standing to the private Worker.
+
+## Phase 2 seller intake
+
+Migration `202608230006_phase2_seller_intake.sql` adds immutable seller submissions, deterministic qualification assessments, channel-level consent events, append-only operator status events, Cal.com appointment offers, and Resend delivery outcomes. The original seller-authored facts and consent snapshot are never updated.
+
+`persist_seller_inquiry(jsonb, jsonb)` enforces privacy acceptance, basic bot controls, channel/contact consistency, and a single idempotent submission UUID before storing the intake and its evidence in one transaction. `record_seller_communication_delivery(jsonb)` and `record_seller_inquiry_status(jsonb)` append provider and operator history. `current_seller_inquiries` supplies the private Worker with the current status while preserving every underlying event.

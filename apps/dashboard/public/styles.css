@@ -327,9 +327,29 @@ label.check .field-caption { gap: 5px; }
 .buyer-buybox span { display: block; color: var(--muted); font-size: 9px; text-transform: uppercase; letter-spacing: .06em; }
 .buyer-buybox strong { display: block; margin-top: 2px; font-size: 12px; }
 .buyer-detail { margin: 6px 0 0; color: var(--muted); font-size: 11px; }
+.seller-controls { display: grid; grid-template-columns: minmax(150px,210px) minmax(150px,210px) auto auto; gap: 12px; align-items: end; margin-bottom: 22px; }
+.seller-portal-link { display: grid; place-items: center; text-decoration: none; }
+#seller-inquiry-list { display: grid; gap: 14px; }
+.seller-inquiry-card { padding: 20px 22px; border: 1px solid var(--line); border-left: 4px solid var(--amber); background: var(--card); }
+.seller-inquiry-card.seller-priority { border-left-color: var(--orange); }
+.seller-inquiry-card.seller-ineligible { border-left-color: var(--red); }
+.seller-inquiry-header { display: flex; justify-content: space-between; align-items: start; gap: 18px; }
+.seller-inquiry-header h4 { margin: 3px 0 1px; color: var(--brown-strong); font: 600 21px Georgia, serif; }
+.seller-inquiry-header p:not(.eyebrow) { margin: 3px 0 0; color: var(--muted); font-size: 11px; }
+.seller-inquiry-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1px; margin: 16px 0; border: 1px solid var(--line); background: var(--line); }
+.seller-inquiry-grid > div { padding: 10px 12px; background: #fcf9f5; }
+.seller-inquiry-grid span { display: block; color: var(--muted); font-size: 9px; letter-spacing: .06em; text-transform: uppercase; }
+.seller-inquiry-grid strong { display: block; margin-top: 2px; font-size: 12px; }
+.seller-contact-evidence { padding: 13px 15px; border: 1px solid var(--line); background: #faf6f1; }
+.seller-contact-evidence p { margin: 4px 0; color: var(--muted); font-size: 11px; overflow-wrap: anywhere; }
+.seller-status-form { display: grid; grid-template-columns: minmax(150px,190px) minmax(260px,1fr) auto; gap: 12px; align-items: end; margin-top: 14px; }
+.seller-status-form .secondary { margin: 0; }
+.seller-status-feedback { grid-column: 1/-1; }
 
 @media (max-width: 980px) {
   .buyer-workspace { grid-template-columns: 1fr; }
+  .seller-status-form { grid-template-columns: 1fr 2fr; }
+  .seller-status-form .secondary { grid-column: 1/-1; }
 }
 
 @media (max-width: 800px) {
@@ -347,6 +367,8 @@ label.check .field-caption { gap: 5px; }
   .skip-trace-summary { grid-template-columns: repeat(2, 1fr); }
   .fact-grid { grid-template-columns: repeat(3, 1fr); }
   .buyer-controls { grid-template-columns: 1fr 1fr; }
+  .seller-controls { grid-template-columns: 1fr 1fr; }
+  .seller-inquiry-grid { grid-template-columns: repeat(2,1fr); }
   body::before { opacity: .18; right: -120px; }
 }
 
@@ -376,6 +398,9 @@ label.check .field-caption { gap: 5px; }
   .buyer-form-grid,
   .choice-grid,
   .buyer-buybox { grid-template-columns: 1fr; }
+  .seller-controls,
+  .seller-inquiry-grid,
+  .seller-status-form { grid-template-columns: 1fr; }
   label.wide { grid-column: span 1; }
   .metric { border-right: 0; border-bottom: 1px solid var(--line); }
   .target { min-width: 0; }
@@ -385,4 +410,5 @@ label.check .field-caption { gap: 5px; }
   .enrichment-source-grid .wide { grid-column: span 1; }
   .skip-trace-grid .wide { grid-column: span 1; }
   .card-actions { flex-wrap: wrap; gap: 8px 12px; }
+  .seller-inquiry-header { flex-direction: column; }
 }

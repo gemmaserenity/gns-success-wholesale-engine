@@ -33,12 +33,12 @@ Add:
 - [x] buyer database with explicit buy boxes and contact standing
 - [x] explainable buyer-demand scoring and probable-buyer counts
 - [x] selective skip tracing with qualification, privacy, cost, provenance, contact-standing, and audit controls
-- seller-facing portal
-- inbound seller qualification
+- [x] seller-facing portal
+- [x] inbound seller qualification
 - AI-assisted seller intake
-- Cal.com integration
-- Resend transactional communications
-- operator notifications
+- [x] Cal.com integration
+- [x] Resend transactional communications
+- [x] operator notifications
 
 ## Phase 3 — Scale
 
