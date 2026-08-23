@@ -34,8 +34,9 @@ body::before {
   bottom: -100px;
   width: clamp(310px, 38vw, 560px);
   height: min(82vh, 900px);
-  background: url("/saguaro-watermark.svg") right bottom / contain no-repeat;
-  opacity: .065;
+  background: url("/saguaro-watermark-detailed.png") right bottom / contain no-repeat;
+  mix-blend-mode: multiply;
+  opacity: .28;
   pointer-events: none;
 }
 
@@ -141,7 +142,7 @@ label.check input { width: 17px; min-height: 17px; accent-color: var(--red-rock)
   .section-heading { align-items: start; flex-direction: column; }
   .target { width: 100%; }
   .decision { grid-template-columns: 1fr; }
-  body::before { opacity: .045; right: -120px; }
+  body::before { opacity: .18; right: -120px; }
 }
 
 @media (max-width: 560px) {
