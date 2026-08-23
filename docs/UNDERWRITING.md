@@ -44,3 +44,7 @@ Estimated equity = ARV − debt − liens
 ```
 
 Defaults are a 0.78 investor purchase factor, $12,000 risk buffer, $5,000 seller-net floor, and $10,000 desired assignment. They are named configuration values, not a universal market rule. Inputs without support must be marked estimated and reflected in `dataConfidence`.
+
+## Phase 2 enriched evaluations
+
+Enrichment never mutates an existing score. New ARV, repair, debt, lien, property-type, square-footage, or year-built evidence produces a fresh evaluation using the original lead plus the current enrichment facts. The fact provenance and enrichment-run UUID are retained in that evaluation's raw input. Non-economic property facts remain auditable without adding redundant score history.

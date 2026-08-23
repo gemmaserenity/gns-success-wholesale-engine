@@ -29,7 +29,7 @@ Add:
 
 - [x] normalized property, owner, ownership-interest, and distress-event persistence
 - [x] durable opportunity queue and evaluation history
-- [ ] improved property enrichment
+- [x] improved property enrichment with explicit confidence and cost gates
 - [ ] buyer database
 - [ ] buyer-demand scoring
 - selective skip tracing

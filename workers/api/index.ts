@@ -1,9 +1,17 @@
-import { ZodError } from "zod";
+import { z, ZodError } from "zod";
 import { TrusteeSaleCsvAdapter } from "../../src/adapters/csv/csv-adapter";
+import { evaluateEnrichmentGate } from "../../src/domain/enrichment/gate";
+import { buildEnrichedEvaluationInput } from "../../src/domain/enrichment/revise-opportunity";
+import { propertyEnrichmentRequestSchema } from "../../src/domain/enrichment/schema";
 import { normalizeApn, normalizeCounty } from "../../src/domain/opportunities/normalize";
 import { counties, pipelineStates } from "../../src/domain/opportunities/types";
 import type { County, PipelineState } from "../../src/domain/opportunities/types";
 import { evaluateOpportunity } from "../../src/services/evaluate-opportunity";
+import {
+  getEnrichmentCandidate,
+  getPropertyEnrichmentStatus,
+  persistPropertyEnrichment,
+} from "../../src/services/property-enrichment-repository";
 import {
   getOpportunityHistory,
   isModernSupabaseSecretKey,
@@ -120,6 +128,63 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
     } catch (error) {
       if (error instanceof SupabaseFeatureUnavailableError) {
         return json({ history: [], persistence: true, historyAvailable: false });
+      }
+      throw error;
+    }
+  }
+  if (url.pathname === "/api/opportunities/enrichment" && request.method === "GET") {
+    const config = supabaseConfig(env);
+    if (!config) return json({ enrichment: null, persistence: false });
+    const evaluationId = z.string().uuid().parse(url.searchParams.get("evaluationId"));
+    try {
+      const candidate = await getEnrichmentCandidate(config, evaluationId);
+      const enrichment = await getPropertyEnrichmentStatus(config, candidate.propertyId);
+      return json({ enrichment, persistence: true, enrichmentAvailable: true });
+    } catch (error) {
+      if (error instanceof SupabaseFeatureUnavailableError) {
+        return json({ enrichment: null, persistence: true, enrichmentAvailable: false });
+      }
+      throw error;
+    }
+  }
+  if (url.pathname === "/api/opportunities/enrichment" && request.method === "POST") {
+    const config = supabaseConfig(env);
+    if (!config) return json({ error: "Supabase persistence is required for property enrichment." }, 503);
+    const requestBody: unknown = JSON.parse(await parseBoundedText(request, 32_768));
+    const enrichmentRequest = propertyEnrichmentRequestSchema.parse(requestBody);
+    try {
+      const candidate = await getEnrichmentCandidate(config, enrichmentRequest.evaluationId);
+      const maximumPaidCostCents = Number(env.MAX_PAID_ENRICHMENT_CENTS || "500");
+      if (!Number.isInteger(maximumPaidCostCents) || maximumPaidCostCents < 0) {
+        throw new Error("MAX_PAID_ENRICHMENT_CENTS must be a non-negative whole number");
+      }
+      const gate = evaluateEnrichmentGate(candidate, enrichmentRequest, { maximumPaidCostCents });
+      if (!gate.allowed) {
+        return json(
+          {
+            error: `Property enrichment was denied: ${gate.reasonCodes.join(", ")}.`,
+            gate,
+          },
+          422,
+        );
+      }
+      const now = new Date();
+      const runId = crypto.randomUUID();
+      const enrichedInput = buildEnrichedEvaluationInput(candidate.rawInput, enrichmentRequest, runId, now);
+      const revisedEvaluation = enrichedInput
+        ? evaluateOpportunity(enrichedInput, { now, evaluationId: crypto.randomUUID() })
+        : undefined;
+      const result = await persistPropertyEnrichment(config, {
+        runId,
+        retrievedAt: enrichmentRequest.retrievedAt ?? now.toISOString(),
+        request: enrichmentRequest,
+        gate,
+        ...(revisedEvaluation ? { revisedEvaluation } : {}),
+      });
+      return json({ result, gate, revisedEvaluation: revisedEvaluation ?? null }, 201);
+    } catch (error) {
+      if (error instanceof SupabaseFeatureUnavailableError) {
+        return json({ error: "Apply the Phase 2 property-enrichment migration before recording evidence." }, 409);
       }
       throw error;
     }

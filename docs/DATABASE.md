@@ -42,3 +42,9 @@ Migration `202608220001_phase1_opportunity_screening.sql` establishes source pro
 Migration `202608230001_phase2_opportunity_history.sql` activates the normalized foundation. The private `persist_opportunity_evaluation(jsonb)` function writes the source record, property, owner, ownership interest, distress event, immutable evaluation, system pipeline event, and audit event in one PostgreSQL transaction. The function is executable only by `service_role`, uses a fixed search path, and is idempotent for a repeated evaluation UUID.
 
 `current_opportunities` is a security-invoker view that returns only the newest evaluation for each normalized `AZ:<COUNTY>:<APN>` key, plus the number of historical evaluations. Historical Phase 1 evaluations remain visible even when their new property foreign key is null; all new Phase 2 writes receive the normalized links.
+
+## Phase 2 property enrichment
+
+Migration `202608230002_phase2_property_enrichment.sql` adds structured property attributes, immutable enrichment runs, and evidence-backed property facts. Each fact records its provider, source type and URL, retrieval time, classification, confidence, and allocated cost. `property_facts.is_current` provides a current projection without deleting superseded evidence.
+
+The restricted `persist_property_enrichment(jsonb, jsonb, jsonb)` function validates the gate again in PostgreSQL, then atomically stores the run and facts, updates structured property fields, optionally persists a new immutable opportunity evaluation, and records an audit event. Repeating the same run UUID is idempotent. The security-invoker `property_enrichment_status` view supplies the dashboard with current facts and cumulative run cost.

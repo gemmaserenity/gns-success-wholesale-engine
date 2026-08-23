@@ -18,6 +18,7 @@
   },
   "vars": {
     "ENVIRONMENT": "production",
-    "MAX_CSV_BYTES": "2097152"
+    "MAX_CSV_BYTES": "2097152",
+    "MAX_PAID_ENRICHMENT_CENTS": "500"
   }
 }

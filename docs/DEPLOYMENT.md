@@ -54,3 +54,24 @@ Then deploy or push the Worker release and verify:
 5. Re-evaluating the same county/APN increases its history count while keeping a single current queue card.
 
 The Worker includes a temporary rolling-release fallback: if the transactional RPC is not present yet, it continues the original Phase 1 `source_records` and `opportunity_evaluations` writes. The queue remains disabled with an explicit migration notice until this migration is applied. Remove the fallback only after every deployed environment has the Phase 2 schema.
+
+## Phase 2 property-enrichment deployment
+
+After milestone 1 is present, apply:
+
+```text
+supabase/migrations/202608230002_phase2_property_enrichment.sql
+```
+
+`MAX_PAID_ENRICHMENT_CENTS` is a non-secret Worker variable and defaults to `500`. Reduce it to tighten the paid-provider ceiling; increase it only after confirming the acquisition economics and provider terms.
+
+Then deploy or push the Worker release and verify:
+
+1. `GET /api/health` reports persistence enabled.
+2. `GET /api/opportunities/enrichment?evaluationId=<evaluation UUID>` returns the selected opportunity, prior runs, and current facts.
+3. In **Opportunity queue**, open **Property evidence** and record one public-record fact with a source URL.
+4. Confirm the response reports the stored fact and the dashboard lists its source, confidence, and classification.
+5. If the fact changes underwriting, confirm a new evaluation appears in history; informational facts should not create a new evaluation.
+6. Confirm an ineligible or over-budget paid run returns HTTP 422 with its gate reason codes and stores nothing.
+
+The enrichment endpoints return a migration notice until the new schema is present; health and the existing opportunity desk remain available during that rollout window.

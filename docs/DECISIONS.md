@@ -55,3 +55,17 @@ Evaluations remain append-only. A security-invoker view ranks them by normalized
 ### Migration-safe Worker rollout
 
 Until the Phase 2 migration reaches an environment, the Worker falls back to the two Phase 1 writes and shows a clear queue migration notice. This allows code and schema to be released without interrupting active screening.
+
+## 2026-08-23 — Phase 2 gated property enrichment
+
+### Public and operator research before paid providers
+
+The first enrichment adapter is provider-neutral and operator-assisted. Public records and permitted free APIs remain the default. A paid run is allowed only for a qualified opportunity scoring at least 80, with at least $10,000 base-case spread, at least 0.65 average input confidence, and a cost no greater than both the configured cap and one percent of the expected assignment fee. The default configured cap is 500 cents.
+
+### Immutable evidence with a current projection
+
+Every enrichment fact is retained with provenance, confidence, classification, retrieval time, and cost allocation. Superseded facts remain historical while one fact per field is marked current. This makes the latest property record useful without erasing how it was obtained.
+
+### Economic enrichment creates a new evaluation
+
+ARV, repairs, debt, liens, property type, square footage, and year built can affect underwriting and therefore create a new immutable evaluation linked to the enrichment run. Informational facts such as bedrooms or mailing address update the evidence record without creating noisy evaluation history.

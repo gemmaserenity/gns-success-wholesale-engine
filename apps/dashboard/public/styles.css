@@ -149,9 +149,33 @@ label.check input { width: 17px; min-height: 17px; accent-color: var(--red-rock)
 .queue-metrics span { display: block; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .06em; }
 .queue-metrics strong { display: block; margin-top: 3px; font-size: 14px; }
 .history-row { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 12px; }
-.history-button { border: 0; background: transparent; color: var(--red-rock); font: inherit; font-weight: 800; cursor: pointer; }
-.history-button:disabled { opacity: .5; cursor: wait; }
+.card-actions { display: flex; gap: 12px; }
+.history-button,
+.enrichment-button { border: 0; background: transparent; color: var(--red-rock); font: inherit; font-weight: 800; cursor: pointer; }
+.history-button:disabled,
+.enrichment-button:disabled { opacity: .5; cursor: wait; }
 .history-list { margin-top: 16px; padding-top: 15px; border-top: 1px solid var(--line); }
+.enrichment-panel { margin-top: 16px; padding-top: 18px; border-top: 1px solid var(--line); }
+.enrichment-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin-bottom: 14px; background: var(--line); border: 1px solid var(--line); }
+.enrichment-summary > div { padding: 10px 12px; background: var(--card); }
+.enrichment-summary span,
+.current-facts span { display: block; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .06em; }
+.enrichment-summary strong { display: block; margin-top: 2px; }
+.current-facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 18px; }
+.current-facts > div { padding: 10px 12px; border: 1px solid var(--line); background: #fcf9f5; }
+.current-facts strong,
+.current-facts small { display: block; }
+.current-facts small { margin-top: 3px; color: var(--muted); font-size: 10px; }
+.enrichment-form { padding: 18px; background: #faf6f1; border: 1px solid var(--line); }
+.compact-heading { margin-bottom: 13px; }
+.compact-heading h4 { margin: 0; color: var(--brown-strong); font: 600 18px Georgia, serif; }
+.enrichment-source-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.enrichment-source-grid .wide { grid-column: span 2; }
+.fact-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--line); }
+.enrichment-submit { margin-top: 18px; }
+.enrichment-feedback { margin-top: 12px; }
+.success-message { margin-bottom: 14px; padding: 12px 14px; border-left: 4px solid var(--success); background: #eef3ed; color: #485448; }
+.empty.compact { padding: 14px; margin-bottom: 18px; }
 .timeline { margin: 0; padding-left: 24px; }
 .timeline li { padding: 4px 0 12px 8px; }
 .timeline li::marker { color: var(--orange); font-weight: 800; }
@@ -171,6 +195,9 @@ label.check input { width: 17px; min-height: 17px; accent-color: var(--red-rock)
   .target { width: 100%; }
   .decision { grid-template-columns: 1fr; }
   .queue-controls { grid-template-columns: 1fr 1fr; }
+  .enrichment-source-grid,
+  .current-facts { grid-template-columns: repeat(2, 1fr); }
+  .fact-grid { grid-template-columns: repeat(3, 1fr); }
   body::before { opacity: .18; right: -120px; }
 }
 
@@ -186,10 +213,16 @@ label.check input { width: 17px; min-height: 17px; accent-color: var(--red-rock)
   .form-grid,
   .metrics,
   .queue-metrics,
-  .queue-controls { grid-template-columns: 1fr; }
+  .queue-controls,
+  .enrichment-summary,
+  .enrichment-source-grid,
+  .current-facts,
+  .fact-grid { grid-template-columns: 1fr; }
   label.wide { grid-column: span 1; }
   .metric { border-right: 0; border-bottom: 1px solid var(--line); }
   .target { min-width: 0; }
   .opportunity-main,
-  .timeline div { flex-direction: column; }
+  .timeline div,
+  .history-row { flex-direction: column; align-items: flex-start; }
+  .enrichment-source-grid .wide { grid-column: span 1; }
 }
