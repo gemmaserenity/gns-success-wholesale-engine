@@ -71,9 +71,13 @@ function secureSellerResponse(response: Response): Response {
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
+function isSellerPortalHost(url: URL, env: Env): boolean {
+  return url.hostname.toLowerCase() === env.SELLER_PORTAL_HOST.trim().toLowerCase();
+}
+
 function isPublicSellerRequest(request: Request, env: Env): boolean {
   const url = new URL(request.url);
-  const sellerHost = url.hostname === env.SELLER_PORTAL_HOST;
+  const sellerHost = isSellerPortalHost(url, env);
   const sellerAssets = new Set(["/", "/seller", "/seller/", "/seller/index.html", "/seller/seller.css", "/seller/seller.js"]);
   if (env.ENVIRONMENT !== "production" && (sellerAssets.has(url.pathname) || url.pathname === "/api/seller/intake")) return true;
   if (!sellerHost) return false;
@@ -603,16 +607,23 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
 
 export default {
   async fetch(request, env): Promise<Response> {
+    const requestUrl = new URL(request.url);
+    const sellerHost = isSellerPortalHost(requestUrl, env);
+    if (sellerHost && !isPublicSellerRequest(request, env)) {
+      return secureSellerResponse(json({ error: "Not found" }, 404));
+    }
     if (!authorized(request, env)) return json({ error: "Cloudflare Access authentication required." }, 401);
     try {
-      const url = new URL(request.url);
+      const url = requestUrl;
       if (url.pathname.startsWith("/api/")) return await handleApi(request, env);
-      if (url.hostname === env.SELLER_PORTAL_HOST && (url.pathname === "/" || url.pathname === "/seller" || url.pathname === "/seller/")) {
-        const sellerUrl = new URL("/seller/index.html", url);
-        return secureSellerResponse(await env.ASSETS.fetch(new Request(sellerUrl, request)));
+      if (sellerHost && (url.pathname === "/" || url.pathname === "/seller")) {
+        return secureSellerResponse(Response.redirect(new URL("/seller/", url), 302));
+      }
+      if (sellerHost) {
+        return secureSellerResponse(await env.ASSETS.fetch(request));
       }
       const assetResponse = await env.ASSETS.fetch(request);
-      return url.hostname === env.SELLER_PORTAL_HOST ? secureSellerResponse(assetResponse) : assetResponse;
+      return assetResponse;
     } catch (error) {
       console.error(JSON.stringify({ event: "request_failed", message: error instanceof Error ? error.message : "Unknown error" }));
       if (error instanceof ZodError) return json({ error: "Validation failed", issues: error.issues }, 422);
