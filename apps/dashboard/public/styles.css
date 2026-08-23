@@ -59,6 +59,10 @@ main { position: relative; z-index: 1; }
 .brand-lockup img { display: block; border-radius: 50%; }
 .topbar h1 { margin: -3px 0 0; color: var(--brown-strong); font: 600 18px/1.2 Georgia, serif; }
 .eyebrow { margin: 0; color: var(--red-rock); letter-spacing: .16em; font-size: 11px; font-weight: 800; }
+.topbar-actions { display: flex; align-items: center; gap: 18px; }
+.guide-link { color: var(--red-rock-dark); font-size: 12px; font-weight: 800; text-decoration: none; }
+.guide-link:hover { color: var(--orange); text-decoration: underline; text-underline-offset: 4px; }
+.guide-link:focus-visible { outline: 3px solid rgba(242, 107, 33, .25); outline-offset: 4px; }
 .status { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
 #health-dot { width: 8px; height: 8px; border-radius: 50%; background: #a9a19b; }
 #health-dot.ok { background: #2f9e5b; box-shadow: 0 0 0 4px rgba(47, 158, 91, .16); }
@@ -326,6 +330,8 @@ label.check .field-caption { gap: 5px; }
   .brand-lockup { gap: 7px; }
   .brand-lockup img { width: 48px; height: 48px; }
   .topbar h1 { font-size: 15px; }
+  .topbar-actions { flex-direction: column-reverse; align-items: flex-end; gap: 4px; }
+  .guide-link { font-size: 10px; }
   .status { max-width: 110px; justify-content: flex-end; text-align: right; font-size: 10px; }
   main { width: min(100% - 24px, 1180px); margin-top: 22px; }
   .panel,
