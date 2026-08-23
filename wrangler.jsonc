@@ -37,14 +37,5 @@
     "CALCOM_EVENT_TYPE_ID": "",
     "CALCOM_SELLER_BOOKING_URL": "",
     "RESEND_FROM_EMAIL": "GNS Success <offers@gns-success.com>"
-  },
-  "secrets": {
-    "required": [
-      "SUPABASE_URL",
-      "SUPABASE_SECRET_KEY",
-      "CALCOM_API_KEY",
-      "RESEND_API_KEY",
-      "OPERATOR_NOTIFICATION_EMAIL"
-    ]
   }
 }

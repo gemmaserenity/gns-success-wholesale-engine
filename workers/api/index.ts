@@ -144,7 +144,16 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
   if (url.pathname === "/api/health" && request.method === "GET") {
     const persistence = Boolean(env.SUPABASE_URL && isModernSupabaseSecretKey(env.SUPABASE_SECRET_KEY));
-    return json({ ok: true, service: "gns-success-wholesale-engine", persistence });
+    return json({
+      ok: true,
+      service: "gns-success-wholesale-engine",
+      persistence,
+      integrations: {
+        calcom: Boolean(env.CALCOM_API_KEY || env.CALCOM_SELLER_BOOKING_URL),
+        resend: Boolean(env.RESEND_API_KEY && env.RESEND_FROM_EMAIL),
+        operatorNotifications: Boolean(env.RESEND_API_KEY && env.OPERATOR_NOTIFICATION_EMAIL),
+      },
+    });
   }
   if (url.pathname === "/api/seller/intake" && request.method === "POST") {
     if (!request.headers.get("Content-Type")?.toLowerCase().startsWith("application/json")) {
