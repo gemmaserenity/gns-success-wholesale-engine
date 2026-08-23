@@ -37,7 +37,7 @@ Phase 2 now includes a durable opportunity desk, gated property-evidence workflo
 - the dashboard shows the latest evaluation for every county/APN in a ranked, filterable queue;
 - every opportunity exposes its evaluation history;
 - operators can record typed property facts with source, retrieval time, confidence, classification, and cost evidence;
-- the dashboard links to a searchable Deal Research Guide that maps official sources and professional evidence to every operator field and future AI-agent handoff;
+- the dashboard links to a searchable Deal Research Guide that maps official sources and professional evidence to every operator field and AI-agent handoff;
 - paid enrichment is denied until an opportunity passes explicit qualification, score, spread, confidence, and cost gates;
 - underwriting facts create a new immutable evaluation instead of silently changing an existing score;
 - buyer profiles preserve contact standing, source, observed performance, and explicit county/ZIP/property/economic buy-box criteria;

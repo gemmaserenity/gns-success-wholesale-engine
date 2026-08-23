@@ -30,7 +30,7 @@ Official operator sources currently recorded in that research:
 
 ## Operator research guide
 
-The deployed dashboard links to `apps/dashboard/public/research-guide.html`. It is the canonical operator-facing source-to-field map and future AI-squad handoff blueprint. It records:
+The deployed dashboard links to `apps/dashboard/public/research-guide.html`. It is the canonical operator-facing source-to-field map and AI-squad handoff blueprint. It records:
 
 - the end-to-end manual research workflow;
 - official Maricopa, Pinal, Arizona entity, court, and bankruptcy starting points;
