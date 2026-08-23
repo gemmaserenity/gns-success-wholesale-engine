@@ -193,6 +193,7 @@ function renderOpportunity(item) {
   const style = item.state === "REJECTED" ? "reject" : item.nextAction === "HUMAN_REVIEW" ? "review" : "";
   const evaluatedAt = new Date(item.evaluatedAt).toLocaleString();
   const buyerMatchAction = item.state === "REJECTED" ? "" : `<button class="buyer-match-button" type="button" data-evaluation-id="${escapeHtml(item.evaluationId)}" aria-expanded="false">Buyer demand</button>`;
+  const skipTraceAction = item.state === "REJECTED" ? "" : `<button class="skip-trace-button" type="button" data-evaluation-id="${escapeHtml(item.evaluationId)}" aria-expanded="false">Selective skip trace</button>`;
   return `<article class="opportunity-card ${style}">
     <div class="opportunity-main">
       <div><p class="eyebrow">${escapeHtml(item.nextAction.replaceAll("_", " "))}</p><h4>${escapeHtml(item.address)}</h4><p>${escapeHtml(item.county)} · APN ${escapeHtml(item.apn)} · ${escapeHtml(item.ownerName)}</p></div>
@@ -204,11 +205,97 @@ function renderOpportunity(item) {
       <div><span>Confidence</span><strong>${escapeHtml(item.confidence)}</strong></div>
       <div><span>Last evaluated</span><strong>${escapeHtml(evaluatedAt)}</strong></div>
     </div>
-    <div class="history-row"><span>${item.historyCount} evaluation${item.historyCount === 1 ? "" : "s"} on record</span><div class="card-actions">${buyerMatchAction}<button class="enrichment-button" type="button" data-evaluation-id="${escapeHtml(item.evaluationId)}" aria-expanded="false">Property evidence</button><button class="history-button" type="button" data-county="${escapeHtml(item.county)}" data-apn="${escapeHtml(item.apn)}" aria-expanded="false">View history</button></div></div>
+    <div class="history-row"><span>${item.historyCount} evaluation${item.historyCount === 1 ? "" : "s"} on record</span><div class="card-actions">${skipTraceAction}${buyerMatchAction}<button class="enrichment-button" type="button" data-evaluation-id="${escapeHtml(item.evaluationId)}" aria-expanded="false">Property evidence</button><button class="history-button" type="button" data-county="${escapeHtml(item.county)}" data-apn="${escapeHtml(item.apn)}" aria-expanded="false">View history</button></div></div>
+    <div class="skip-trace-panel hidden"></div>
     <div class="buyer-match-panel hidden"></div>
     <div class="enrichment-panel hidden"></div>
     <div class="history-list hidden"></div>
   </article>`;
+}
+
+function renderSkipTracePanel(evaluationId, candidate, status, message = "") {
+  const warning = `<div class="skip-trace-warning"><strong>Research only.</strong> This workflow never sends data to a provider and never initiates outreach. A discovered phone, email, or address remains <strong>unknown standing</strong> until separate evidence supports consent, an existing relationship, or suppression.</div>`;
+  const candidateSummary = candidate ? `<div class="skip-trace-summary"><div><span>Qualification</span><strong>${escapeHtml(candidate.state.replaceAll("_", " "))} · ${candidate.score}/100</strong></div><div><span>Base assignment</span><strong>${money.format(candidate.expectedAssignmentFee)}</strong></div><div><span>Owner confidence</span><strong>${Math.round(candidate.ownerConfidence * 100)}%</strong></div><div><span>External transmission</span><strong>Disabled</strong></div></div>` : "";
+  if (!status) {
+    return `${message ? `<div class="success-message">${escapeHtml(message)}</div>` : ""}${warning}${candidateSummary}
+      <form class="skip-trace-request-form guarded-form" data-evaluation-id="${escapeHtml(evaluationId)}">
+        <div class="section-heading compact-heading"><h4>Open one research case</h4><p>Requires a qualified 80+ opportunity, $10,000+ base assignment, 65%+ owner confidence, bounded cost, and no active suppression.</p></div>
+        <div class="skip-trace-grid">
+          <label>Purpose<select name="purpose"><option value="OWNER_LOCATION">Owner location</option><option value="OWNER_IDENTITY_CONFIRMATION">Owner identity confirmation</option><option value="AUTHORIZED_REPRESENTATIVE">Authorized representative</option></select></label>
+          <label>Planned source<select name="plannedSourceType"><option value="OPERATOR_RESEARCH">Operator research</option><option value="PUBLIC_RECORD">Public record</option><option value="PERMITTED_PROVIDER">Permitted provider</option><option value="PAID_PROVIDER">Paid provider</option></select></label>
+          <label>Provider or source<input name="provider" required placeholder="Operator research"></label>
+          <label>Estimated cost in dollars<input name="estimatedCostDollars" type="number" min="0" step="0.01" value="0"></label>
+          <label class="wide">Source URL<input name="sourceUrl" type="url" placeholder="Required for public or provider sources"></label>
+          <label class="wide">Why this lookup is necessary<textarea name="necessityReason" required minlength="20" placeholder="Explain why this specific opportunity needs contact research."></textarea></label>
+          <label class="wide">Owner identity evidence already reviewed<textarea name="identityBasis" required minlength="20" placeholder="Name the deed, assessor, recorder, or other evidence tying this owner to the parcel."></textarea></label>
+          <label class="wide">Privacy and minimization notes<textarea name="privacyNotes" required minlength="20" placeholder="Explain what will be collected, why it is proportionate, and how unrelated data will be avoided."></textarea></label>
+        </div>
+        <label class="check-row"><input name="publicRecordsReviewed" type="checkbox" required> I reviewed available public/property evidence before requesting contact research.</label>
+        <label class="check-row"><input name="contactStandingReviewed" type="checkbox" required> I reviewed known contact standing and understand that contact data is not consent.</label>
+        <button class="primary skip-trace-submit" type="submit">Approve research case</button>
+        <div class="skip-trace-feedback" aria-live="polite"></div>
+      </form>`;
+  }
+
+  const findingCards = status.findings.length ? `<div class="skip-trace-findings">${status.findings.map((finding) => `<article><p class="eyebrow">${escapeHtml(finding.kind.replaceAll("_", " "))} · ${escapeHtml(finding.identityStatus.replaceAll("_", " "))}</p><h5>${escapeHtml(finding.value)}</h5><p>${escapeHtml(finding.subjectName)} · ${escapeHtml(finding.classification.replaceAll("_", " "))} · ${Math.round(finding.confidence * 100)}%</p><small>${escapeHtml(finding.provider)} · ${escapeHtml(new Date(finding.retrievedAt).toLocaleString())} · ${money.format(finding.costCents / 100)}</small></article>`).join("")}</div>` : '<p class="empty compact">No contact findings were stored.</p>';
+  const statusSummary = `<div class="skip-trace-summary"><div><span>Case status</span><strong>${escapeHtml(status.status.replaceAll("_", " "))}</strong></div><div><span>Outcome</span><strong>${escapeHtml((status.outcome || "PENDING").replaceAll("_", " "))}</strong></div><div><span>Research cost</span><strong>${money.format(status.actualCostCents / 100)} / ${money.format(status.gate.maximumApprovedCostCents / 100)}</strong></div><div><span>Contact standing</span><strong>${escapeHtml(status.contactStanding.replaceAll("_", " "))}</strong></div></div>`;
+  const resultForm = status.status === "READY_FOR_RESEARCH" ? `<form class="skip-trace-result-form guarded-form" data-case-id="${escapeHtml(status.caseId)}">
+      <div class="section-heading compact-heading"><h4>Record completed research</h4><p>Record evidence obtained outside this app. Do not enter unrelated people or data beyond the stated purpose.</p></div>
+      <div class="skip-trace-grid">
+        <label>Outcome<select name="outcome"><option value="CONTACT_FOUND">Contact found</option><option value="NO_MATCH">No match</option><option value="NEEDS_REVIEW">Needs review</option></select></label>
+        <label>Actual cost in dollars<input name="actualCostDollars" type="number" min="0" step="0.01" value="0"></label>
+        <label>Finding type<select name="kind"><option value="PHONE">Phone</option><option value="EMAIL">Email</option><option value="MAILING_ADDRESS">Mailing address</option><option value="OTHER">Other</option></select></label>
+        <label>Contact value<input name="value" placeholder="Leave blank only for no match"></label>
+        <label>Subject name<input name="subjectName" placeholder="Name attached to the finding"></label>
+        <label>Identity status<select name="identityStatus"><option value="UNVERIFIED">Unverified</option><option value="OWNER">Owner</option><option value="AUTHORIZED_REPRESENTATIVE">Authorized representative</option><option value="WRONG_PARTY">Wrong party</option><option value="STALE">Stale</option></select></label>
+        <label>Evidence source<select name="sourceType"><option value="OPERATOR_RESEARCH">Operator research</option><option value="PUBLIC_RECORD">Public record</option><option value="PERMITTED_PROVIDER">Permitted provider</option><option value="PAID_PROVIDER">Paid provider</option></select></label>
+        <label>Provider<input name="findingProvider" placeholder="Research source"></label>
+        <label class="wide">Exact source URL<input name="findingSourceUrl" type="url" placeholder="Required for public or provider sources"></label>
+        <label>Source record ID<input name="sourceRecordId"></label>
+        <label>Classification<select name="classification"><option value="HUMAN_VERIFIED">Human verified</option><option value="VERIFIED">Verified</option><option value="PUBLIC_RECORD">Public record</option><option value="ESTIMATED">Estimated</option></select></label>
+        <label>Confidence<select name="confidence"><option value="0.9">High · 90%</option><option value="0.75">Good · 75%</option><option value="0.6">Moderate · 60%</option><option value="0.4">Low · 40%</option></select></label>
+        <label>Finding cost in dollars<input name="findingCostDollars" type="number" min="0" step="0.01" value="0"></label>
+        <label class="wide">Research notes<textarea name="researchNotes" minlength="10" placeholder="How this result was found and what remains uncertain."></textarea></label>
+        <label class="wide">Completion notes<textarea name="completionNotes" required minlength="10" placeholder="Summarize the completed search and any unresolved questions."></textarea></label>
+      </div>
+      <button class="primary skip-trace-result-submit" type="submit">Record result and close case</button>
+      <div class="skip-trace-feedback" aria-live="polite"></div>
+    </form>` : "";
+  const standingForm = status.status === "COMPLETED" ? `<form class="contact-standing-form guarded-form" data-case-id="${escapeHtml(status.caseId)}">
+      <div class="section-heading compact-heading"><h4>Record contact standing</h4><p>This append-only review does not send a message or place a call.</p></div>
+      <div class="skip-trace-grid">
+        <label>Standing<select name="standing"><option value="UNKNOWN">Unknown / research only</option><option value="CONSENTED">Consented</option><option value="EXISTING_RELATIONSHIP">Existing relationship</option><option value="DO_NOT_CONTACT">Do not contact</option><option value="DECEASED">Deceased</option></select></label>
+        <label>Evidence source<input name="evidenceSource" required placeholder="Signed form, operator review, verbal request"></label>
+        <label class="wide">Evidence URL<input name="evidenceUrl" type="url" placeholder="Optional exact evidence link"></label>
+        <fieldset class="wide channel-fieldset"><legend>Explicitly supported channels</legend><label><input type="checkbox" name="allowedChannels" value="CALL"> Call</label><label><input type="checkbox" name="allowedChannels" value="TEXT"> Text</label><label><input type="checkbox" name="allowedChannels" value="EMAIL"> Email</label><label><input type="checkbox" name="allowedChannels" value="MAIL"> Mail</label></fieldset>
+        <label class="wide">Reason and evidence<textarea name="reason" required minlength="10" placeholder="Document the consent, relationship, suppression request, or unresolved standing."></textarea></label>
+      </div>
+      <button class="secondary contact-standing-submit" type="submit">Record standing event</button>
+      <div class="skip-trace-feedback" aria-live="polite"></div>
+    </form>` : "";
+  return `${message ? `<div class="success-message">${escapeHtml(message)}</div>` : ""}${warning}${statusSummary}${findingCards}${resultForm}${standingForm}`;
+}
+
+async function loadSkipTracePanel(button, message = "") {
+  const panel = button.closest(".opportunity-card").querySelector(".skip-trace-panel");
+  panel.classList.remove("hidden");
+  panel.innerHTML = '<p class="loading">Loading selective skip-trace controls…</p>';
+  button.disabled = true;
+  try {
+    const params = new URLSearchParams({ evaluationId: button.dataset.evaluationId });
+    const body = await send(`/api/opportunities/skip-trace?${params}`, {});
+    if (body.selectiveSkipTracingAvailable === false) {
+      panel.innerHTML = '<div class="empty">Apply the selective-skip-tracing migration before opening a research case.</div>';
+      return;
+    }
+    panel.innerHTML = renderSkipTracePanel(button.dataset.evaluationId, body.candidate, body.skipTrace, message);
+    button.textContent = "Hide skip trace";
+    button.setAttribute("aria-expanded", "true");
+  } catch (error) {
+    panel.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
+  } finally {
+    button.disabled = false;
+  }
 }
 
 function renderHistory(history) {
@@ -564,6 +651,18 @@ $("#queue-state").addEventListener("change", loadOpportunities);
 $("#queue-county").addEventListener("change", loadOpportunities);
 
 $("#opportunity-list").addEventListener("click", async (event) => {
+  const skipTraceButton = event.target.closest(".skip-trace-button");
+  if (skipTraceButton) {
+    const panel = skipTraceButton.closest(".opportunity-card").querySelector(".skip-trace-panel");
+    if (!panel.classList.contains("hidden")) {
+      panel.classList.add("hidden");
+      skipTraceButton.textContent = "Selective skip trace";
+      skipTraceButton.setAttribute("aria-expanded", "false");
+    } else {
+      await loadSkipTracePanel(skipTraceButton);
+    }
+    return;
+  }
   const buyerMatchButton = event.target.closest(".buyer-match-button");
   if (buyerMatchButton) {
     const panel = buyerMatchButton.closest(".opportunity-card").querySelector(".buyer-match-panel");
@@ -631,6 +730,115 @@ $("#opportunity-list").addEventListener("click", async (event) => {
 });
 
 $("#opportunity-list").addEventListener("submit", async (event) => {
+  const skipTraceRequestForm = event.target.closest(".skip-trace-request-form");
+  if (skipTraceRequestForm) {
+    event.preventDefault();
+    const button = skipTraceRequestForm.querySelector(".skip-trace-submit");
+    const feedback = skipTraceRequestForm.querySelector(".skip-trace-feedback");
+    button.disabled = true;
+    feedback.innerHTML = "";
+    try {
+      const data = Object.fromEntries(new FormData(skipTraceRequestForm));
+      const body = await send("/api/opportunities/skip-trace", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          evaluationId: skipTraceRequestForm.dataset.evaluationId,
+          purpose: data.purpose,
+          necessityReason: data.necessityReason,
+          identityBasis: data.identityBasis,
+          plannedSourceType: data.plannedSourceType,
+          provider: data.provider,
+          sourceUrl: data.sourceUrl,
+          estimatedCostCents: Math.round(Number(data.estimatedCostDollars || 0) * 100),
+          privacyNotes: data.privacyNotes,
+          publicRecordsReviewed: data.publicRecordsReviewed === "on",
+          contactStandingReviewed: data.contactStandingReviewed === "on",
+        }),
+      });
+      const toggle = skipTraceRequestForm.closest(".opportunity-card").querySelector(".skip-trace-button");
+      await loadSkipTracePanel(toggle, `Research case ${body.created ? "approved" : "already exists"}. No data was sent to an external provider.`);
+    } catch (error) {
+      feedback.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
+      button.disabled = false;
+    }
+    return;
+  }
+
+  const skipTraceResultForm = event.target.closest(".skip-trace-result-form");
+  if (skipTraceResultForm) {
+    event.preventDefault();
+    const button = skipTraceResultForm.querySelector(".skip-trace-result-submit");
+    const feedback = skipTraceResultForm.querySelector(".skip-trace-feedback");
+    button.disabled = true;
+    feedback.innerHTML = "";
+    try {
+      const data = Object.fromEntries(new FormData(skipTraceResultForm));
+      const findings = data.outcome === "NO_MATCH" ? [] : [{
+        kind: data.kind,
+        value: data.value,
+        subjectName: data.subjectName,
+        identityStatus: data.identityStatus,
+        provider: data.findingProvider,
+        sourceType: data.sourceType,
+        sourceUrl: data.findingSourceUrl,
+        sourceRecordId: data.sourceRecordId,
+        classification: data.classification,
+        confidence: Number(data.confidence),
+        costCents: Math.round(Number(data.findingCostDollars || 0) * 100),
+        researchNotes: data.researchNotes,
+      }];
+      const body = await send("/api/opportunities/skip-trace/results", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          caseId: skipTraceResultForm.dataset.caseId,
+          outcome: data.outcome,
+          actualCostCents: Math.round(Number(data.actualCostDollars || 0) * 100),
+          completionNotes: data.completionNotes,
+          findings,
+        }),
+      });
+      const toggle = skipTraceResultForm.closest(".opportunity-card").querySelector(".skip-trace-button");
+      await loadSkipTracePanel(toggle, `${body.findingsStored} contact finding${body.findingsStored === 1 ? "" : "s"} recorded as evidence. Contact standing remains separate; no outreach was initiated.`);
+    } catch (error) {
+      feedback.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
+      button.disabled = false;
+    }
+    return;
+  }
+
+  const standingForm = event.target.closest(".contact-standing-form");
+  if (standingForm) {
+    event.preventDefault();
+    const button = standingForm.querySelector(".contact-standing-submit");
+    const feedback = standingForm.querySelector(".skip-trace-feedback");
+    button.disabled = true;
+    feedback.innerHTML = "";
+    try {
+      const formData = new FormData(standingForm);
+      const data = Object.fromEntries(formData);
+      const body = await send("/api/opportunities/skip-trace/standing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          caseId: standingForm.dataset.caseId,
+          standing: data.standing,
+          allowedChannels: formData.getAll("allowedChannels"),
+          reason: data.reason,
+          evidenceSource: data.evidenceSource,
+          evidenceUrl: data.evidenceUrl,
+        }),
+      });
+      const toggle = standingForm.closest(".opportunity-card").querySelector(".skip-trace-button");
+      await loadSkipTracePanel(toggle, `${body.result.standing.replaceAll("_", " ")} standing recorded in the append-only audit trail. No outreach was initiated.`);
+    } catch (error) {
+      feedback.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
+      button.disabled = false;
+    }
+    return;
+  }
+
   const form = event.target.closest(".enrichment-form");
   if (!form) return;
   event.preventDefault();

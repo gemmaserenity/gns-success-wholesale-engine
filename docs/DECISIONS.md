@@ -97,3 +97,17 @@ An active profile counts as a probable buyer only when it has relationship or op
 ### Matching creates immutable history
 
 A match run snapshots both property inputs and buyer profiles, then creates a new opportunity evaluation with the modeled buyer-demand score. It never edits the source evaluation. One source evaluation can produce only one run, making retries idempotent while a later evaluation can be intentionally recalculated against updated evidence or buyer profiles.
+
+## 2026-08-23 — Selective skip tracing
+
+### Research approval and provider execution are separate boundaries
+
+The application approves and audits one specific research case but has no provider adapter or bulk endpoint. Provider selection, credentials, external transmission, and paid activation remain deferred until explicitly authorized and reviewed.
+
+### Contact evidence and contact standing are separate records
+
+Skip-trace findings are immutable evidence. Seller contact standing is an append-only owner-level event with explicit eligible channels. New contact evidence defaults to unknown standing, so the existence or apparent identity of a phone, email, or address can never authorize outreach.
+
+### Suppression is enforced before further enrichment
+
+The database independently checks the latest owner standing and refuses a new skip-trace case when it is do not contact. Audit payloads record case and control metadata without duplicating contact values.

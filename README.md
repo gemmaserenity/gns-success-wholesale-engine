@@ -30,7 +30,7 @@ See `/docs` for architecture and implementation documentation.
 
 ## Phase 2 operational milestone
 
-Phase 2 now includes a durable opportunity desk, gated property-evidence workflow, buyer database, and explainable buyer-demand matching:
+Phase 2 now includes a durable opportunity desk, gated property-evidence workflow, buyer database, explainable buyer-demand matching, and selective skip tracing:
 
 - normalized property, owner, ownership, distress-event, evaluation, pipeline, and audit records persist in one database transaction;
 - repeated evaluation requests are idempotent;
@@ -46,9 +46,13 @@ Phase 2 now includes a durable opportunity desk, gated property-evidence workflo
 - each match retains criterion-level outcomes, a buyer snapshot, credibility evidence, probable-buyer count, and model version;
 - a modeled buyer-demand score creates a new immutable opportunity evaluation rather than overwriting provisional input;
 - database responses are runtime-validated before they reach the browser;
-- a rolling-release fallback preserves Phase 1 writes until the Phase 2 migration is applied.
+- a rolling-release fallback preserves Phase 1 writes until the Phase 2 migration is applied;
+- selective skip tracing opens only one qualified, 80+ score, $10,000+ spread, owner-confident opportunity at a time;
+- each contact-research case records necessity, privacy minimization, intended source, bounded cost, provenance, and immutable findings;
+- contact standing is append-only and separate from contact data, with do-not-contact suppression and explicit eligible channels;
+- no provider adapter, bulk endpoint, external transmission, or outreach action is present.
 
-Apply the migrations in `supabase/migrations/` in filename order. Buyer-demand matching requires `202608230004_phase2_buyer_demand_matching.sql`. See [`docs/PHASE-2-MILESTONE-1.md`](docs/PHASE-2-MILESTONE-1.md) for the earlier durable-desk handoff and [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for current deployment checks.
+Apply the migrations in `supabase/migrations/` in filename order. Selective skip tracing requires `202608230005_phase2_selective_skip_tracing.sql`. See [`docs/PHASE-2-SELECTIVE-SKIP-TRACING.md`](docs/PHASE-2-SELECTIVE-SKIP-TRACING.md) for the operational boundary and [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for current deployment checks.
 
 ## Phase 1 foundation
 

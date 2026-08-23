@@ -44,6 +44,8 @@ The Phase 2 buyer database adds a second operating queue behind the same private
 
 Buyer-demand matching is an explicit operator action on a persisted, non-rejected opportunity. The Worker loads the immutable source evaluation, current property evidence, and at most 100 active buyer profiles; the deterministic `buyer-demand-v1` model classifies each profile as probable, possible, excluded, or ineligible. Criterion outcomes distinguish mismatch from missing evidence. PostgreSQL transactionally stores the run, buyer snapshots, explanations, and a new opportunity evaluation whose buyer-demand component is model-derived. Existing evaluations are never mutated.
 
+Selective skip tracing is a provider-neutral research boundary, not a vendor adapter. One persisted evaluation can open one case only after deterministic checks of qualification, score, base spread, owner confidence, public-record/contact-standing review, suppression, privacy rationale, and bounded cost. Completed findings retain immutable provenance and cost evidence; seller contact standing is append-only and separate. The app transmits nothing to a provider, contact existence never becomes permission, and no outreach API exists.
+
 ### GitHub
 
 GitHub is the canonical source repository and deployment history.

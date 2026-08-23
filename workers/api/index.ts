@@ -11,6 +11,12 @@ import type { BuyerStatus } from "../../src/domain/buyers/types";
 import { evaluateEnrichmentGate } from "../../src/domain/enrichment/gate";
 import { buildEnrichedEvaluationInput } from "../../src/domain/enrichment/revise-opportunity";
 import { propertyEnrichmentRequestSchema } from "../../src/domain/enrichment/schema";
+import { evaluateSkipTraceGate } from "../../src/domain/skip-tracing/gate";
+import {
+  contactStandingSchema,
+  skipTraceCaseRequestSchema,
+  skipTraceResultSchema,
+} from "../../src/domain/skip-tracing/schema";
 import { normalizeApn, normalizeCounty } from "../../src/domain/opportunities/normalize";
 import { counties, pipelineStates } from "../../src/domain/opportunities/types";
 import type { County, PipelineState } from "../../src/domain/opportunities/types";
@@ -30,6 +36,12 @@ import {
   SupabaseFeatureUnavailableError,
   type SupabaseConfig,
 } from "../../src/services/supabase-repository";
+import {
+  createSkipTraceCase,
+  getSkipTraceStatus,
+  persistSkipTraceResult,
+  recordContactStanding,
+} from "../../src/services/skip-trace-repository";
 
 const jsonHeaders = { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" };
 
@@ -186,6 +198,109 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
     } catch (error) {
       if (error instanceof SupabaseFeatureUnavailableError) {
         return json({ history: [], persistence: true, historyAvailable: false });
+      }
+      throw error;
+    }
+  }
+  if (url.pathname === "/api/opportunities/skip-trace" && request.method === "GET") {
+    const config = supabaseConfig(env);
+    if (!config) return json({ skipTrace: null, candidate: null, persistence: false });
+    const evaluationId = z.string().uuid().parse(url.searchParams.get("evaluationId"));
+    try {
+      const candidate = await getEnrichmentCandidate(config, evaluationId);
+      const skipTrace = await getSkipTraceStatus(config, candidate.propertyId);
+      return json({
+        skipTrace: skipTrace ?? null,
+        candidate: {
+          evaluationId: candidate.evaluationId,
+          state: candidate.state,
+          score: candidate.score,
+          expectedAssignmentFee: candidate.expectedAssignmentFee,
+          ownerConfidence: candidate.rawInput.ownerConfidence,
+        },
+        persistence: true,
+        selectiveSkipTracingAvailable: true,
+        externalTransmissionAllowed: false,
+        outreachAvailable: false,
+      });
+    } catch (error) {
+      if (error instanceof SupabaseFeatureUnavailableError) {
+        return json({ skipTrace: null, candidate: null, persistence: true, selectiveSkipTracingAvailable: false });
+      }
+      throw error;
+    }
+  }
+  if (url.pathname === "/api/opportunities/skip-trace" && request.method === "POST") {
+    const config = supabaseConfig(env);
+    if (!config) return json({ error: "Supabase persistence is required for selective skip tracing." }, 503);
+    const requestBody: unknown = JSON.parse(await parseBoundedText(request, 16_384));
+    const skipTraceRequest = skipTraceCaseRequestSchema.parse(requestBody);
+    try {
+      const candidate = await getEnrichmentCandidate(config, skipTraceRequest.evaluationId);
+      const existingStatus = await getSkipTraceStatus(config, candidate.propertyId);
+      const maximumCostCents = Number(env.MAX_SKIP_TRACE_CENTS || "1000");
+      if (!Number.isInteger(maximumCostCents) || maximumCostCents < 0) {
+        throw new Error("MAX_SKIP_TRACE_CENTS must be a non-negative whole number");
+      }
+      const gate = evaluateSkipTraceGate(
+        {
+          ...candidate,
+          ownerConfidence: candidate.rawInput.ownerConfidence,
+        },
+        skipTraceRequest,
+        {
+          maximumCostCents,
+          suppressed: existingStatus?.contactStanding === "DO_NOT_CONTACT",
+        },
+      );
+      if (!gate.allowed) {
+        return json({ error: `Selective skip tracing was denied: ${gate.reasonCodes.join(", ")}.`, gate }, 422);
+      }
+      const result = await createSkipTraceCase(config, {
+        caseId: crypto.randomUUID(),
+        requestedAt: new Date().toISOString(),
+        request: skipTraceRequest,
+        gate,
+      });
+      return json({ skipTrace: result.status, gate, created: result.created }, result.created ? 201 : 200);
+    } catch (error) {
+      if (error instanceof SupabaseFeatureUnavailableError) {
+        return json({ error: "Apply the Phase 2 selective-skip-tracing migration before opening research cases." }, 409);
+      }
+      throw error;
+    }
+  }
+  if (url.pathname === "/api/opportunities/skip-trace/results" && request.method === "POST") {
+    const config = supabaseConfig(env);
+    if (!config) return json({ error: "Supabase persistence is required for selective skip tracing." }, 503);
+    const requestBody: unknown = JSON.parse(await parseBoundedText(request, 32_768));
+    const resultInput = skipTraceResultSchema.parse(requestBody);
+    try {
+      const result = await persistSkipTraceResult(config, resultInput, new Date().toISOString());
+      return json({
+        skipTrace: result.status,
+        findingsStored: result.findingsStored,
+        externalTransmissionAllowed: false,
+        outreachInitiated: false,
+      }, 201);
+    } catch (error) {
+      if (error instanceof SupabaseFeatureUnavailableError) {
+        return json({ error: "Apply the Phase 2 selective-skip-tracing migration before recording research." }, 409);
+      }
+      throw error;
+    }
+  }
+  if (url.pathname === "/api/opportunities/skip-trace/standing" && request.method === "POST") {
+    const config = supabaseConfig(env);
+    if (!config) return json({ error: "Supabase persistence is required for contact-standing controls." }, 503);
+    const requestBody: unknown = JSON.parse(await parseBoundedText(request, 16_384));
+    const standingInput = contactStandingSchema.parse(requestBody);
+    try {
+      const result = await recordContactStanding(config, standingInput, new Date().toISOString());
+      return json({ result, outreachInitiated: false }, 201);
+    } catch (error) {
+      if (error instanceof SupabaseFeatureUnavailableError) {
+        return json({ error: "Apply the Phase 2 selective-skip-tracing migration before recording contact standing." }, 409);
       }
       throw error;
     }

@@ -55,7 +55,8 @@
         <li><span>06</span><h4>Run preliminary economics</h4><p>Enter ranges in Manual evaluation. Let the deterministic engine calculate scenarios, deal killers, score, and next action.</p></li>
         <li><span>07</span><h4>Add property evidence</h4><p>For a saved opportunity, record each fact with provider, source URL, classification, confidence, retrieval time, and cost.</p></li>
         <li><span>08</span><h4>Calculate buyer demand</h4><p>Compare the opportunity with active, contact-eligible buyer profiles. Missing constrained evidence remains unknown, not matched.</p></li>
-        <li><span>09</span><h4>Human qualification and contact</h4><p>Resolve red flags, confirm lawful contact standing, verify seller authority and motivation, then move into acquisition and closing.</p></li>
+        <li><span>09</span><h4>Selective contact research</h4><p>Only for a specifically qualified opportunity: document necessity, identity basis, privacy review, source, cost ceiling, and existing suppression before opening one research case.</p></li>
+        <li><span>10</span><h4>Human qualification and contact</h4><p>Review each finding, record contact standing separately, verify seller authority and motivation, then move into acquisition and closing. Contact data alone never authorizes outreach.</p></li>
       </ol>
     </section>
 
@@ -163,6 +164,20 @@
       </div>
 
       <div class="mapping-block">
+        <h4>Selective skip trace — one qualified opportunity at a time</h4>
+        <div class="table-wrap"><table class="field-table"><thead><tr><th>Workflow field</th><th>Evidence used</th><th>Map exactly this</th><th>Control</th></tr></thead><tbody>
+          <tr><td><code>Purpose</code></td><td>Specific unresolved owner/contact question</td><td>Owner location, owner identity confirmation, or authorized-representative research.</td><td>Never use a generic prospecting purpose.</td></tr>
+          <tr><td><code>Necessity reason</code></td><td>Qualified opportunity and remaining research gap</td><td>Why contact research is proportionate and needed for this parcel now.</td><td>One case per persisted evaluation; no bulk request exists.</td></tr>
+          <tr><td><code>Identity basis</code></td><td>Current deed, assessor, recorder, entity, or professional evidence</td><td>Evidence tying the named owner to the property before searching for contact data.</td><td>Low owner confidence blocks the request.</td></tr>
+          <tr><td><code>Planned source / Provider / URL</code></td><td>Public record, operator research, or separately permitted provider</td><td>The specific intended source and exact link when external.</td><td>The app does not call a vendor or transmit PII.</td></tr>
+          <tr><td><code>Estimated / Actual cost</code></td><td>Provider quote, document charge, or zero-cost research</td><td>Direct cost in dollars, allocated to this one case and its findings.</td><td>Gate caps cost at the lower configured ceiling and 1% of base assignment.</td></tr>
+          <tr><td><code>Privacy notes</code></td><td>Data-minimization review</td><td>What is needed, why it is proportionate, and what unrelated data will not be collected.</td><td>Do not store sensitive or unrelated household data.</td></tr>
+          <tr><td><code>Finding</code></td><td>Completed research evidence</td><td>Phone, email, mailing address, or other result plus subject, identity status, provenance, retrieval time, confidence, cost, and notes.</td><td>Findings are immutable evidence; unverified and wrong-party data stay labeled.</td></tr>
+          <tr><td><code>Contact standing</code></td><td>Separate consent, relationship, suppression, or death evidence</td><td>Unknown, consented, existing relationship, do not contact, or deceased; eligible channels must be explicit.</td><td>A finding defaults to unknown and permits no outreach.</td></tr>
+        </tbody></table></div>
+      </div>
+
+      <div class="mapping-block">
         <h4>Buyer database — source is the buyer relationship, not property records</h4>
         <div class="table-wrap"><table class="field-table"><thead><tr><th>Buyer field</th><th>Find it here</th><th>Map exactly this</th><th>Do not</th></tr></thead><tbody>
           <tr><td><code>Buyer name / Company</code></td><td>Direct buyer intake, verified relationship, business records</td><td>Recognizable buyer name and acquisition entity.</td><td>Do not create a buyer from an unverified list alone.</td></tr>
@@ -208,8 +223,9 @@
         <article><span>A5</span><h4>Valuation & Condition Agent</h4><p><strong>Finds:</strong> relevant sold comps, ARV range, visible condition, repair scope/range.</p><p><strong>Hands off:</strong> comp set, adjustments, photos/inspection/contractor support, uncertainty.</p><p><strong>Never substitutes:</strong> assessed value for ARV.</p></article>
         <article><span>A6</span><h4>Underwriting Agent</h4><p><strong>Does:</strong> validates required ranges and runs deterministic scenarios and deal-killer rules.</p><p><strong>Hands off:</strong> immutable evaluation, score, reasons, confidence, and next action.</p><p><strong>Never changes:</strong> formulas ad hoc or invents a missing input.</p></article>
         <article><span>A7</span><h4>Buyer Demand Agent</h4><p><strong>Does:</strong> compares a non-rejected opportunity with active buyer buy boxes and property evidence.</p><p><strong>Hands off:</strong> probable/possible/excluded/ineligible classifications and criterion explanations.</p><p><strong>Never contacts:</strong> a buyer without eligible contact standing and operator authorization.</p></article>
-        <article><span>A8</span><h4>QA & Compliance Agent</h4><p><strong>Checks:</strong> provenance, recency, conflicts, confidence, duplicate counting, consent, and do-not-contact status.</p><p><strong>Hands off:</strong> approved research packet or an explicit correction queue.</p><p><strong>Escalates:</strong> probate, bankruptcy, mismatch, legal/title ambiguity, and unsupported high-confidence claims.</p></article>
-        <article><span>A9</span><h4>Seller Intake & Acquisitions</h4><p><strong>Does later:</strong> permitted seller intake, authority/motivation discovery, appointment, offer discussion, disclosures, and human negotiation.</p><p><strong>Hands off:</strong> seller-verified facts and acquisition decision.</p><p><strong>Requires:</strong> compliance gates and human oversight before contracting.</p></article>
+        <article><span>A8</span><h4>Selective Contact Research Agent</h4><p><strong>Does:</strong> opens one gated research case only after purpose, necessity, owner identity, privacy, suppression, and cost checks pass.</p><p><strong>Hands off:</strong> immutable findings with source, retrieval time, confidence, cost, and identity status.</p><p><strong>Never:</strong> bulk-enriches, calls a provider from this app, or treats a contact value as consent.</p></article>
+        <article><span>A9</span><h4>QA & Compliance Agent</h4><p><strong>Checks:</strong> provenance, recency, conflicts, confidence, duplicate counting, consent, and do-not-contact status.</p><p><strong>Hands off:</strong> approved research packet or an explicit correction queue.</p><p><strong>Escalates:</strong> probate, bankruptcy, mismatch, legal/title ambiguity, and unsupported high-confidence claims.</p></article>
+        <article><span>A10</span><h4>Seller Intake & Acquisitions</h4><p><strong>Does later:</strong> permitted seller intake, authority/motivation discovery, appointment, offer discussion, disclosures, and human negotiation.</p><p><strong>Hands off:</strong> seller-verified facts and acquisition decision.</p><p><strong>Requires:</strong> eligible contact standing, compliance gates, and human oversight before outreach or contracting.</p></article>
       </div>
       <div class="handoff"><h4>Required handoff packet</h4><p>Every agent handoff must include: <strong>county + APN</strong>, field name, original value, normalized value, provider/source, exact source URL, source record ID when available, retrieval timestamp, evidence classification, confidence, cost, conflicts, and the next unresolved question. Business state belongs in the database—not only in an agent conversation.</p></div>
     </section>
@@ -226,6 +242,7 @@
       <div class="completion-grid">
         <article><h4>Ready for preliminary evaluation</h4><ul><li>County, APN, address, and owner resolve.</li><li>Distress source is traceable.</li><li>ARV, repairs, and debt ranges are present.</li><li>Known liens and confidence are addressed.</li><li>Conflicts are flagged, not hidden.</li></ul></article>
         <article><h4>Ready for buyer-demand matching</h4><ul><li>Opportunity is persisted and not rejected.</li><li>Relevant constrained property facts are recorded.</li><li>Buyer profiles are active and evidence-based.</li><li>Contact standing and credibility are current.</li><li>Unknown facts remain explicitly unknown.</li></ul></article>
+        <article><h4>Ready for selective contact research</h4><ul><li>Opportunity is qualified, scores at least 80, and supports the target spread.</li><li>Owner identity confidence is at least 65%.</li><li>Purpose, necessity, privacy, source, and cost are documented.</li><li>Public/property evidence and contact standing were reviewed.</li><li>No active do-not-contact suppression exists.</li></ul></article>
         <article><h4>Not ready for contract or closing</h4><ul><li>Seller identity or authority is uncertain.</li><li>Sale date/postponement is not current.</li><li>Payoff, taxes, liens, or title remain materially uncertain.</li><li>Probate/bankruptcy/legal issues lack review.</li><li>Required disclosures or human approval are missing.</li></ul></article>
       </div>
       <p class="legal-note">This page is an operational research guide, not legal, tax, appraisal, lending, title, or contracting advice. County and court systems can be incomplete, delayed, or changed. Verify material facts with the responsible agency or qualified professional.</p>

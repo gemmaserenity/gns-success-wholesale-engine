@@ -32,7 +32,7 @@ Add:
 - [x] improved property enrichment with explicit confidence and cost gates
 - [x] buyer database with explicit buy boxes and contact standing
 - [x] explainable buyer-demand scoring and probable-buyer counts
-- selective skip tracing
+- [x] selective skip tracing with qualification, privacy, cost, provenance, contact-standing, and audit controls
 - seller-facing portal
 - inbound seller qualification
 - AI-assisted seller intake

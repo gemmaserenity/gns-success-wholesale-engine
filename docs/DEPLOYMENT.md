@@ -116,3 +116,27 @@ Then deploy or push the Worker release and verify:
 8. Repeat the same source-evaluation request and confirm it returns the existing run rather than adding another.
 
 The matching endpoint returns a migration notice until the schema is present. Existing evaluation, enrichment, and buyer-profile workflows remain available during rollout.
+
+## Phase 2 selective-skip-tracing deployment
+
+After buyer-demand matching is present, apply:
+
+```text
+supabase/migrations/202608230005_phase2_selective_skip_tracing.sql
+```
+
+`MAX_SKIP_TRACE_CENTS` is a non-secret Worker variable and defaults to `1000`. The gate also limits a case to one percent of the base expected assignment fee. This value authorizes only the documented research case; it does not authorize a purchase or external transmission.
+
+Then deploy or push the Worker release and verify:
+
+1. `GET /api/health` still reports persistence enabled.
+2. `GET /api/opportunities/skip-trace?evaluationId=<evaluation UUID>` returns `selectiveSkipTracingAvailable: true`, `externalTransmissionAllowed: false`, and `outreachAvailable: false`.
+3. Confirm a preliminary, sub-80, sub-$10,000-spread, low-owner-confidence, over-budget, or suppressed opportunity is denied and stores nothing.
+4. Open one qualifying case and confirm the qualification snapshot, purpose, necessity, identity basis, privacy notes, source plan, and cost are visible.
+5. Record either a no-match result or one evidence finding and confirm the case closes without initiating outreach.
+6. Confirm the first finding leaves contact standing `UNKNOWN` with no allowed channels.
+7. Record do-not-contact standing and confirm a later evaluation for the same owner cannot open a new case.
+8. Confirm Supabase contains linked `skip_trace_cases`, `skip_trace_findings`, `seller_contact_standing_events`, and PII-minimized `audit_events` records.
+9. Confirm there is no network request to an external data provider and no call, text, email, or mail action.
+
+The API returns a migration notice until the schema is present. Existing opportunity, enrichment, buyer, and matching workflows remain available during rollout.

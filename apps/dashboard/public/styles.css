@@ -226,13 +226,37 @@ label.check .field-caption { gap: 5px; }
 .card-actions { display: flex; gap: 12px; }
 .history-button,
 .enrichment-button,
-.buyer-match-button { border: 0; background: transparent; color: var(--red-rock); font: inherit; font-weight: 800; cursor: pointer; }
+.buyer-match-button,
+.skip-trace-button { border: 0; background: transparent; color: var(--red-rock); font: inherit; font-weight: 800; cursor: pointer; }
 .history-button:disabled,
 .enrichment-button:disabled,
-.buyer-match-button:disabled { opacity: .5; cursor: wait; }
+.buyer-match-button:disabled,
+.skip-trace-button:disabled { opacity: .5; cursor: wait; }
 .history-list { margin-top: 16px; padding-top: 15px; border-top: 1px solid var(--line); }
 .enrichment-panel { margin-top: 16px; padding-top: 18px; border-top: 1px solid var(--line); }
 .buyer-match-panel { margin-top: 16px; padding-top: 18px; border-top: 1px solid var(--line); }
+.skip-trace-panel { margin-top: 16px; padding-top: 18px; border-top: 1px solid var(--line); }
+.skip-trace-warning { margin-bottom: 14px; padding: 13px 15px; border-left: 4px solid var(--amber); background: #fff7e9; color: #5d4936; font-size: 12px; }
+.skip-trace-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; margin-bottom: 14px; border: 1px solid var(--line); background: var(--line); }
+.skip-trace-summary > div { padding: 11px 12px; background: var(--card); }
+.skip-trace-summary span { display: block; color: var(--muted); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
+.skip-trace-summary strong { display: block; margin-top: 3px; color: var(--brown-strong); font-size: 14px; }
+.guarded-form { margin-top: 14px; padding: 18px; border: 1px solid var(--line); background: #faf6f1; }
+.skip-trace-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.skip-trace-grid .wide { grid-column: 1 / -1; }
+.skip-trace-grid textarea { min-height: 84px; resize: vertical; }
+.check-row { flex-direction: row; align-items: flex-start; margin-top: 12px; font-weight: 650; }
+.check-row input { width: 17px; min-height: 17px; flex: 0 0 17px; margin-top: 1px; accent-color: var(--red-rock); }
+.skip-trace-feedback { margin-top: 12px; }
+.skip-trace-findings { display: grid; gap: 9px; margin-bottom: 14px; }
+.skip-trace-findings article { padding: 13px 14px; border: 1px solid var(--line); border-left: 4px solid var(--orange); background: #fcf9f5; }
+.skip-trace-findings h5 { margin: 3px 0; color: var(--brown-strong); font: 600 17px Georgia, serif; overflow-wrap: anywhere; }
+.skip-trace-findings p:not(.eyebrow),
+.skip-trace-findings small { display: block; margin: 0; color: var(--muted); font-size: 11px; }
+.channel-fieldset { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 0; padding: 11px 12px 12px; border: 1px solid var(--line); }
+.channel-fieldset legend { color: var(--brown); font-size: 11px; font-weight: 800; }
+.channel-fieldset label { flex-direction: row; align-items: center; font-weight: 650; }
+.channel-fieldset input { width: 17px; min-height: 17px; accent-color: var(--red-rock); }
 .buyer-demand-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; margin-bottom: 12px; border: 1px solid var(--line); background: var(--line); }
 .buyer-demand-summary > div { padding: 11px 12px; background: var(--card); }
 .buyer-demand-summary span { display: block; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .06em; }
@@ -319,7 +343,8 @@ label.check .field-caption { gap: 5px; }
   .queue-controls { grid-template-columns: 1fr 1fr; }
   .enrichment-source-grid,
   .current-facts,
-  .buyer-demand-summary { grid-template-columns: repeat(2, 1fr); }
+  .buyer-demand-summary,
+  .skip-trace-summary { grid-template-columns: repeat(2, 1fr); }
   .fact-grid { grid-template-columns: repeat(3, 1fr); }
   .buyer-controls { grid-template-columns: 1fr 1fr; }
   body::before { opacity: .18; right: -120px; }
@@ -342,6 +367,8 @@ label.check .field-caption { gap: 5px; }
   .queue-controls,
   .enrichment-summary,
   .buyer-demand-summary,
+  .skip-trace-summary,
+  .skip-trace-grid,
   .enrichment-source-grid,
   .current-facts,
   .fact-grid,
@@ -356,4 +383,6 @@ label.check .field-caption { gap: 5px; }
   .timeline div,
   .history-row { flex-direction: column; align-items: flex-start; }
   .enrichment-source-grid .wide { grid-column: span 1; }
+  .skip-trace-grid .wide { grid-column: span 1; }
+  .card-actions { flex-wrap: wrap; gap: 8px 12px; }
 }
