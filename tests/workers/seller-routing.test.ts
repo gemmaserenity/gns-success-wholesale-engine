@@ -9,11 +9,15 @@ function environment(assetFetch = vi.fn(async () => new Response("seller asset")
   } as unknown as Env;
 }
 
+function request(url: string): Parameters<typeof worker.fetch>[0] {
+  return new Request(url) as Parameters<typeof worker.fetch>[0];
+}
+
 describe("seller portal routing", () => {
   it("redirects the public hostname root to the seller form", async () => {
     const assetFetch = vi.fn(async () => new Response("operator dashboard"));
     const response = await worker.fetch(
-      new Request("https://sell.gns-success.com/"),
+      request("https://sell.gns-success.com/"),
       environment(assetFetch),
     );
 
@@ -26,7 +30,7 @@ describe("seller portal routing", () => {
   it("serves seller assets without a Cloudflare Access assertion", async () => {
     const assetFetch = vi.fn(async () => new Response("seller form"));
     const response = await worker.fetch(
-      new Request("https://sell.gns-success.com/seller/"),
+      request("https://sell.gns-success.com/seller/"),
       environment(assetFetch),
     );
 
@@ -38,12 +42,23 @@ describe("seller portal routing", () => {
   it("does not expose operator assets through the seller hostname", async () => {
     const assetFetch = vi.fn(async () => new Response("operator javascript"));
     const response = await worker.fetch(
-      new Request("https://sell.gns-success.com/app.js"),
+      request("https://sell.gns-success.com/app.js"),
       environment(assetFetch),
     );
 
     expect(response.status).toBe(404);
     expect(await response.json()).toEqual({ error: "Not found" });
     expect(assetFetch).not.toHaveBeenCalled();
+  });
+
+  it("allows the published GNS Success logo on the public hostname", async () => {
+    const assetFetch = vi.fn(async () => new Response("logo"));
+    const response = await worker.fetch(
+      request("https://sell.gns-success.com/logo192.png"),
+      environment(assetFetch),
+    );
+
+    expect(response.status).toBe(200);
+    expect(assetFetch).toHaveBeenCalledOnce();
   });
 });

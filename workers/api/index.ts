@@ -78,7 +78,7 @@ function isSellerPortalHost(url: URL, env: Env): boolean {
 function isPublicSellerRequest(request: Request, env: Env): boolean {
   const url = new URL(request.url);
   const sellerHost = isSellerPortalHost(url, env);
-  const sellerAssets = new Set(["/", "/seller", "/seller/", "/seller/index.html", "/seller/seller.css", "/seller/seller.js"]);
+  const sellerAssets = new Set(["/", "/logo192.png", "/seller", "/seller/", "/seller/index.html", "/seller/seller.css", "/seller/seller.js"]);
   if (env.ENVIRONMENT !== "production" && (sellerAssets.has(url.pathname) || url.pathname === "/api/seller/intake")) return true;
   if (!sellerHost) return false;
   if (request.method === "GET" && sellerAssets.has(url.pathname)) return true;
