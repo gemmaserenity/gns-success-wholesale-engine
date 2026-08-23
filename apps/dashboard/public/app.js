@@ -2,7 +2,7 @@ const $ = (selector) => document.querySelector(selector);
 const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
 fetch("/api/health").then((response) => response.json()).then((health) => {
-  $("#health").textContent = health.persistence ? "Engine online · Supabase connected" : "Engine online · local evaluation mode";
+  $("#health").textContent = health.persistence ? "Engine online · database connected" : "Engine online · local evaluation mode";
   $("#health-dot").classList.add("ok");
 }).catch(() => { $("#health").textContent = "Engine unavailable"; });
 
