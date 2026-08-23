@@ -1,0 +1,33 @@
+import type { BuyerProfileInput } from "../../src/domain/buyers/types";
+
+export const validBuyerProfile: BuyerProfileInput = {
+  displayName: "Desert Key Investments",
+  companyName: "Desert Key Investments LLC",
+  email: "acquisitions@example.com",
+  phone: "602-555-0100",
+  status: "ACTIVE",
+  contactStatus: "RELATIONSHIP",
+  source: "OPERATOR_MANUAL",
+  sourceUrl: "",
+  notes: "Closes through a local title company.",
+  verifiedPurchaseCount: 14,
+  gnsClosingCount: 2,
+  retradeCount: 0,
+  reliabilityScore: 92,
+  criteria: {
+    preferredCounties: ["MARICOPA"],
+    preferredZips: ["85041", "85251"],
+    propertyTypes: ["SFR", "TOWNHOUSE"],
+    purchasePriceMin: 150000,
+    purchasePriceMax: 350000,
+    arvMin: 300000,
+    maxRepairs: 75000,
+    squareFeetMin: 900,
+    squareFeetMax: 2600,
+    yearBuiltMin: 1950,
+    hoaPreference: "EITHER",
+    occupancies: ["VACANT", "TENANT_OCCUPIED"],
+    closeSpeedDays: 10,
+    financing: ["CASH", "HARD_MONEY"],
+  },
+};

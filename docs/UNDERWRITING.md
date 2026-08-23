@@ -48,3 +48,5 @@ Defaults are a 0.78 investor purchase factor, $12,000 risk buffer, $5,000 seller
 ## Phase 2 enriched evaluations
 
 Enrichment never mutates an existing score. New ARV, repair, debt, lien, property-type, square-footage, or year-built evidence produces a fresh evaluation using the original lead plus the current enrichment facts. The fact provenance and enrichment-run UUID are retained in that evaluation's raw input. Non-economic property facts remain auditable without adding redundant score history.
+
+Buyer criteria are currently stored independently from underwriting. A future matching run may use purchase-price, ARV, repair, size, year-built, occupancy, HOA, financing, and close-speed criteria, but must not alter an existing evaluation without producing a new auditable result.

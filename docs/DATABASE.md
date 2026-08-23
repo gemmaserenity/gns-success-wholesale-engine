@@ -48,3 +48,9 @@ Migration `202608230001_phase2_opportunity_history.sql` activates the normalized
 Migration `202608230002_phase2_property_enrichment.sql` adds structured property attributes, immutable enrichment runs, and evidence-backed property facts. Each fact records its provider, source type and URL, retrieval time, classification, confidence, and allocated cost. `property_facts.is_current` provides a current projection without deleting superseded evidence.
 
 The restricted `persist_property_enrichment(jsonb, jsonb, jsonb)` function validates the gate again in PostgreSQL, then atomically stores the run and facts, updates structured property fields, optionally persists a new immutable opportunity evaluation, and records an audit event. Repeating the same run UUID is idempotent. The security-invoker `property_enrichment_status` view supplies the dashboard with current facts and cumulative run cost.
+
+## Phase 2 buyer database
+
+Migration `202608230003_phase2_buyer_database.sql` creates normalized `buyers` and `buyer_criteria` tables. A buyer profile records identity, contact information and standing, provenance, operating status, verified purchase and GNS closing counts, retrades, and an optional evidence-based reliability score. Criteria record counties, ZIPs, property types, purchase price, ARV, repair tolerance, size, year built, HOA preference, occupancy, close speed, and financing.
+
+The restricted `persist_buyer_profile(jsonb)` function creates or updates both records in one transaction and records an audit event. Profiles are never deleted through the application; operators use paused, archived, or do-not-contact states. The security-invoker `buyer_profiles` view provides one runtime-validated profile per buyer to the private Worker. This milestone does not create buyer matches or change opportunity scores.

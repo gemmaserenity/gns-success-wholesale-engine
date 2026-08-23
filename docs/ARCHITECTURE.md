@@ -40,6 +40,8 @@ Phase 2 milestone 1 persists each evaluation through one transactional database 
 
 Phase 2 property enrichment follows the same boundary. Operators may add public-record, permitted-API, or paid-provider evidence through the Worker. Free evidence is allowed for active opportunities; paid evidence additionally requires a qualified disposition, an 80+ score, at least $10,000 base-case spread, sufficient existing confidence, and a bounded cost. PostgreSQL stores the evidence and any underwriting revision in one transaction.
 
+The Phase 2 buyer database adds a second operating queue behind the same private Worker boundary. Buyer identity, contact standing, observed performance, and buy-box criteria are stored transactionally in normalized tables. The database is intentionally evidence-only at this milestone: buyer criteria do not become an opportunity score until the matching model can produce explainable matches and a probable buyer count.
+
 ### GitHub
 
 GitHub is the canonical source repository and deployment history.

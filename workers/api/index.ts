@@ -1,5 +1,8 @@
 import { z, ZodError } from "zod";
 import { TrusteeSaleCsvAdapter } from "../../src/adapters/csv/csv-adapter";
+import { buyerProfileInputSchema } from "../../src/domain/buyers/schema";
+import { buyerStatuses } from "../../src/domain/buyers/types";
+import type { BuyerStatus } from "../../src/domain/buyers/types";
 import { evaluateEnrichmentGate } from "../../src/domain/enrichment/gate";
 import { buildEnrichedEvaluationInput } from "../../src/domain/enrichment/revise-opportunity";
 import { propertyEnrichmentRequestSchema } from "../../src/domain/enrichment/schema";
@@ -7,6 +10,7 @@ import { normalizeApn, normalizeCounty } from "../../src/domain/opportunities/no
 import { counties, pipelineStates } from "../../src/domain/opportunities/types";
 import type { County, PipelineState } from "../../src/domain/opportunities/types";
 import { evaluateOpportunity } from "../../src/services/evaluate-opportunity";
+import { listBuyers, persistBuyerProfile } from "../../src/services/buyer-repository";
 import {
   getEnrichmentCandidate,
   getPropertyEnrichmentStatus,
@@ -73,11 +77,59 @@ function isCounty(value: string): value is County {
   return counties.some((county) => county === value);
 }
 
+function isBuyerStatus(value: string): value is BuyerStatus {
+  return buyerStatuses.some((status) => status === value);
+}
+
 async function handleApi(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
   if (url.pathname === "/api/health" && request.method === "GET") {
     const persistence = Boolean(env.SUPABASE_URL && isModernSupabaseSecretKey(env.SUPABASE_SECRET_KEY));
     return json({ ok: true, service: "gns-success-wholesale-engine", persistence });
+  }
+  if (url.pathname === "/api/buyers" && request.method === "GET") {
+    const config = supabaseConfig(env);
+    if (!config) return json({ buyers: [], persistence: false });
+    const statusValue = url.searchParams.get("status")?.toUpperCase();
+    const countyValue = url.searchParams.get("county")?.toUpperCase();
+    let status: BuyerStatus | undefined;
+    let county: County | undefined;
+    if (statusValue) {
+      if (!isBuyerStatus(statusValue)) return json({ error: "Unsupported buyer status filter." }, 422);
+      status = statusValue;
+    }
+    if (countyValue) {
+      if (!isCounty(countyValue)) return json({ error: "Unsupported buyer county filter." }, 422);
+      county = countyValue;
+    }
+    try {
+      const buyers = await listBuyers(config, {
+        limit: parseLimit(url.searchParams.get("limit"), 50),
+        ...(status ? { status } : {}),
+        ...(county ? { county } : {}),
+      });
+      return json({ buyers, persistence: true, buyerDatabaseAvailable: true });
+    } catch (error) {
+      if (error instanceof SupabaseFeatureUnavailableError) {
+        return json({ buyers: [], persistence: true, buyerDatabaseAvailable: false });
+      }
+      throw error;
+    }
+  }
+  if (url.pathname === "/api/buyers" && request.method === "POST") {
+    const config = supabaseConfig(env);
+    if (!config) return json({ error: "Supabase persistence is required for buyer profiles." }, 503);
+    const requestBody: unknown = JSON.parse(await parseBoundedText(request, 32_768));
+    const profile = buyerProfileInputSchema.parse(requestBody);
+    try {
+      const result = await persistBuyerProfile(config, { ...profile, id: profile.id ?? crypto.randomUUID() });
+      return json(result, result.created ? 201 : 200);
+    } catch (error) {
+      if (error instanceof SupabaseFeatureUnavailableError) {
+        return json({ error: "Apply the Phase 2 buyer-database migration before recording buyers." }, 409);
+      }
+      throw error;
+    }
   }
   if (url.pathname === "/api/opportunities" && request.method === "GET") {
     const config = supabaseConfig(env);

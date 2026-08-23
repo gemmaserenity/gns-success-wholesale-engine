@@ -30,7 +30,7 @@ See `/docs` for architecture and implementation documentation.
 
 ## Phase 2 operational milestone
 
-Phase 2 now includes a durable opportunity desk and gated property-evidence workflow:
+Phase 2 now includes a durable opportunity desk, gated property-evidence workflow, and buyer database:
 
 - normalized property, owner, ownership, distress-event, evaluation, pipeline, and audit records persist in one database transaction;
 - repeated evaluation requests are idempotent;
@@ -39,10 +39,12 @@ Phase 2 now includes a durable opportunity desk and gated property-evidence work
 - operators can record typed property facts with source, retrieval time, confidence, classification, and cost evidence;
 - paid enrichment is denied until an opportunity passes explicit qualification, score, spread, confidence, and cost gates;
 - underwriting facts create a new immutable evaluation instead of silently changing an existing score;
+- buyer profiles preserve contact standing, source, observed performance, and explicit county/ZIP/property/economic buy-box criteria;
+- buyer updates are auditable and records are paused, archived, or marked do-not-contact instead of deleted;
 - database responses are runtime-validated before they reach the browser;
 - a rolling-release fallback preserves Phase 1 writes until the Phase 2 migration is applied.
 
-Apply the migrations in `supabase/migrations/` in filename order. The property-evidence workflow requires `202608230002_phase2_property_enrichment.sql`. See [`docs/PHASE-2-MILESTONE-1.md`](docs/PHASE-2-MILESTONE-1.md) for the earlier durable-desk handoff and [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for current deployment checks.
+Apply the migrations in `supabase/migrations/` in filename order. Buyer profiles require `202608230003_phase2_buyer_database.sql`. See [`docs/PHASE-2-MILESTONE-1.md`](docs/PHASE-2-MILESTONE-1.md) for the earlier durable-desk handoff and [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for current deployment checks.
 
 ## Phase 1 foundation
 

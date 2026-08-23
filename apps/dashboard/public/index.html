@@ -45,6 +45,7 @@
       <button class="tab active" data-tab="manual">Manual evaluation</button>
       <button class="tab" data-tab="csv">CSV batch</button>
       <button class="tab" data-tab="opportunities">Opportunity queue</button>
+      <button class="tab" data-tab="buyers">Buyer database</button>
     </nav>
 
     <section id="manual-panel" class="panel">
@@ -102,6 +103,64 @@
         <button id="refresh-opportunities" class="secondary" type="button">Refresh queue</button>
       </div>
       <div id="opportunity-list" aria-live="polite"></div>
+    </section>
+
+    <section id="buyers-panel" class="panel hidden">
+      <div class="section-heading"><h3>Buyer database</h3><p>Record verified investor relationships and explicit buy-box criteria. No buyer demand is inferred yet.</p></div>
+      <div class="buyer-controls">
+        <label>Status<select id="buyer-status-filter"><option value="">All statuses</option><option value="ACTIVE">Active</option><option value="PAUSED">Paused</option><option value="DO_NOT_CONTACT">Do not contact</option><option value="ARCHIVED">Archived</option></select></label>
+        <label>County<select id="buyer-county-filter"><option value="">Both counties</option><option value="MARICOPA">Maricopa</option><option value="PINAL">Pinal</option></select></label>
+        <button id="refresh-buyers" class="secondary" type="button">Refresh buyers</button>
+        <button id="new-buyer" class="secondary" type="button">New buyer</button>
+      </div>
+      <div class="buyer-workspace">
+        <form id="buyer-form" class="buyer-form">
+          <input type="hidden" name="buyerId">
+          <div class="section-heading compact-heading"><h4>Buyer profile</h4><p>At least one email or phone number is required.</p></div>
+          <div class="buyer-form-grid">
+            <label>Buyer name<input name="displayName" required maxlength="160"></label>
+            <label>Company<input name="companyName" maxlength="160"></label>
+            <label>Email<input name="email" type="email" maxlength="254"></label>
+            <label>Phone<input name="phone" type="tel" maxlength="40"></label>
+            <label>Status<select name="status"><option value="ACTIVE">Active</option><option value="PAUSED">Paused</option><option value="DO_NOT_CONTACT">Do not contact</option><option value="ARCHIVED">Archived</option></select></label>
+            <label>Contact standing<select name="contactStatus"><option value="UNVERIFIED">Unverified</option><option value="RELATIONSHIP">Existing relationship</option><option value="OPTED_IN">Opted in</option><option value="DO_NOT_CONTACT">Do not contact</option></select></label>
+            <label>Source<input name="source" required value="OPERATOR_MANUAL" maxlength="120"></label>
+            <label>Source URL<input name="sourceUrl" type="url"></label>
+            <label class="full">Notes<textarea name="notes" maxlength="2000" rows="3"></textarea></label>
+          </div>
+
+          <div class="section-heading compact-heading divided"><h4>Buy box</h4><p>Use only criteria the buyer has actually communicated or demonstrated.</p></div>
+          <fieldset><legend>Preferred counties</legend><div class="choice-grid"><label class="check"><input type="checkbox" name="preferredCounties" value="MARICOPA" checked> Maricopa</label><label class="check"><input type="checkbox" name="preferredCounties" value="PINAL"> Pinal</label></div></fieldset>
+          <label>Preferred ZIPs<input name="preferredZips" placeholder="85251, 85041"></label>
+          <fieldset><legend>Property types</legend><div class="choice-grid"><label class="check"><input type="checkbox" name="propertyTypes" value="SFR" checked> SFR</label><label class="check"><input type="checkbox" name="propertyTypes" value="CONDO"> Condo</label><label class="check"><input type="checkbox" name="propertyTypes" value="TOWNHOUSE"> Townhouse</label><label class="check"><input type="checkbox" name="propertyTypes" value="MULTIFAMILY"> Multifamily</label><label class="check"><input type="checkbox" name="propertyTypes" value="MOBILE_HOME"> Mobile home</label><label class="check"><input type="checkbox" name="propertyTypes" value="LAND"> Land</label></div></fieldset>
+          <div class="buyer-form-grid range-grid">
+            <label>Purchase price min<input type="number" name="purchasePriceMin" min="0"></label>
+            <label>Purchase price max<input type="number" name="purchasePriceMax" min="0"></label>
+            <label>ARV min<input type="number" name="arvMin" min="0"></label>
+            <label>ARV max<input type="number" name="arvMax" min="0"></label>
+            <label>Maximum repairs<input type="number" name="maxRepairs" min="0"></label>
+            <label>Close speed (days)<input type="number" name="closeSpeedDays" min="1" max="180"></label>
+            <label>Square feet min<input type="number" name="squareFeetMin" min="0"></label>
+            <label>Square feet max<input type="number" name="squareFeetMax" min="0"></label>
+            <label>Year built min<input type="number" name="yearBuiltMin" min="1800" max="2200"></label>
+            <label>Year built max<input type="number" name="yearBuiltMax" min="1800" max="2200"></label>
+            <label>HOA preference<select name="hoaPreference"><option value="EITHER">Either</option><option value="ALLOWED">Allowed</option><option value="AVOID">Avoid</option></select></label>
+          </div>
+          <fieldset><legend>Occupancy</legend><div class="choice-grid"><label class="check"><input type="checkbox" name="occupancies" value="ANY" checked> Any</label><label class="check"><input type="checkbox" name="occupancies" value="VACANT"> Vacant</label><label class="check"><input type="checkbox" name="occupancies" value="TENANT_OCCUPIED"> Tenant occupied</label><label class="check"><input type="checkbox" name="occupancies" value="OWNER_OCCUPIED"> Owner occupied</label></div></fieldset>
+          <fieldset><legend>Financing</legend><div class="choice-grid"><label class="check"><input type="checkbox" name="financing" value="CASH" checked> Cash</label><label class="check"><input type="checkbox" name="financing" value="HARD_MONEY"> Hard money</label><label class="check"><input type="checkbox" name="financing" value="PRIVATE_MONEY"> Private money</label><label class="check"><input type="checkbox" name="financing" value="CONVENTIONAL"> Conventional</label><label class="check"><input type="checkbox" name="financing" value="OTHER"> Other</label></div></fieldset>
+
+          <div class="section-heading compact-heading divided"><h4>Observed performance</h4><p>Leave reliability blank until there is supportable evidence.</p></div>
+          <div class="buyer-form-grid range-grid">
+            <label>Verified purchases<input type="number" name="verifiedPurchaseCount" min="0" value="0"></label>
+            <label>GNS closings<input type="number" name="gnsClosingCount" min="0" value="0"></label>
+            <label>Retrades<input type="number" name="retradeCount" min="0" value="0"></label>
+            <label>Reliability (0–100)<input type="number" name="reliabilityScore" min="0" max="100"></label>
+          </div>
+          <button class="primary" type="submit">Save buyer profile</button>
+          <div id="buyer-feedback" aria-live="polite"></div>
+        </form>
+        <div id="buyer-list" aria-live="polite"></div>
+      </div>
     </section>
 
     <section id="results" aria-live="polite"></section>

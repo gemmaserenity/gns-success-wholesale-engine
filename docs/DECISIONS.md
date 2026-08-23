@@ -69,3 +69,17 @@ Every enrichment fact is retained with provenance, confidence, classification, r
 ### Economic enrichment creates a new evaluation
 
 ARV, repairs, debt, liens, property type, square footage, and year built can affect underwriting and therefore create a new immutable evaluation linked to the enrichment run. Informational facts such as bedrooms or mailing address update the evidence record without creating noisy evaluation history.
+
+## 2026-08-23 — Phase 2 buyer database
+
+### Buyer identity and buy box are separate normalized records
+
+Buyer identity, contact standing, provenance, and observed performance belong to `buyers`; market and property criteria belong to `buyer_criteria`. This keeps one operational profile per buyer while making future matching criteria explicit and queryable.
+
+### Contact standing is explicit and deletion is unavailable
+
+The profile distinguishes active, paused, archived, and do-not-contact states. A do-not-contact operating state must match its contact standing at both validation and database layers. The application does not delete buyer profiles, preserving history and suppression evidence.
+
+### No inferred demand before matching evidence exists
+
+Creating a buyer database does not retroactively validate the provisional buyer-demand score. The existing opportunity score remains unchanged until a later deterministic matcher can show which active buyers fit, why they fit, and how many credible buyers exist.

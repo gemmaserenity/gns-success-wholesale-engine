@@ -75,3 +75,23 @@ Then deploy or push the Worker release and verify:
 6. Confirm an ineligible or over-budget paid run returns HTTP 422 with its gate reason codes and stores nothing.
 
 The enrichment endpoints return a migration notice until the new schema is present; health and the existing opportunity desk remain available during that rollout window.
+
+## Phase 2 buyer-database deployment
+
+After the property-enrichment migration is present, apply:
+
+```text
+supabase/migrations/202608230003_phase2_buyer_database.sql
+```
+
+Then deploy or push the Worker release and verify:
+
+1. `GET /api/health` reports persistence enabled.
+2. `GET /api/buyers` returns `buyerDatabaseAvailable: true`.
+3. Open **Buyer database** and create a representative buyer with one contact method, a source, at least one county, property type, occupancy, and financing method.
+4. Confirm the buyer appears with the expected buy box and can be filtered by county and status.
+5. Edit the buyer and confirm the same UUID is updated rather than duplicated.
+6. Mark a test buyer do-not-contact and confirm both status fields remain synchronized.
+7. Confirm Supabase contains linked `buyers` and `buyer_criteria` rows plus a `BUYER_PROFILE` audit event.
+
+The API returns a migration notice until the schema is present. Opportunity evaluation, enrichment, and the existing dashboard remain available during the rollout window.

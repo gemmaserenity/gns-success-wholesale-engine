@@ -11,6 +11,7 @@ document.querySelectorAll(".tab").forEach((tab) => tab.addEventListener("click",
   document.querySelectorAll("main > .panel").forEach((panel) => panel.classList.toggle("hidden", panel.id !== `${tab.dataset.tab}-panel`));
   $("#results").innerHTML = "";
   if (tab.dataset.tab === "opportunities") loadOpportunities();
+  if (tab.dataset.tab === "buyers") loadBuyers();
 }));
 
 function escapeHtml(value) {
@@ -157,6 +158,163 @@ async function loadOpportunities() {
     list.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
   }
 }
+
+let loadedBuyers = [];
+
+function formatOptionalRange(minimum, maximum, formatter = (value) => String(value)) {
+  if (minimum === undefined && maximum === undefined) return "Any";
+  if (minimum === undefined) return `Up to ${formatter(maximum)}`;
+  if (maximum === undefined) return `${formatter(minimum)}+`;
+  return `${formatter(minimum)}–${formatter(maximum)}`;
+}
+
+function renderBuyer(buyer) {
+  const criteria = buyer.criteria;
+  const contact = [buyer.email, buyer.phone].filter(Boolean).map(escapeHtml).join(" · ");
+  const statusClass = buyer.status === "DO_NOT_CONTACT" ? "buyer-stop" : buyer.status !== "ACTIVE" ? "buyer-paused" : "";
+  return `<article class="buyer-card ${statusClass}">
+    <div class="buyer-card-header"><div><p class="eyebrow">${escapeHtml(buyer.status.replaceAll("_", " "))}</p><h4>${escapeHtml(buyer.displayName)}</h4><p>${buyer.companyName ? `${escapeHtml(buyer.companyName)} · ` : ""}${contact}</p></div><button class="buyer-edit" type="button" data-buyer-id="${escapeHtml(buyer.id)}">Edit</button></div>
+    <div class="buyer-buybox"><div><span>Markets</span><strong>${escapeHtml(criteria.preferredCounties.join(" · "))}</strong></div><div><span>Property types</span><strong>${escapeHtml(criteria.propertyTypes.join(" · "))}</strong></div><div><span>Purchase price</span><strong>${escapeHtml(formatOptionalRange(criteria.purchasePriceMin, criteria.purchasePriceMax, (value) => money.format(value)))}</strong></div><div><span>Maximum repairs</span><strong>${criteria.maxRepairs === undefined ? "Any" : money.format(criteria.maxRepairs)}</strong></div></div>
+    <p class="buyer-detail"><strong>ZIPs:</strong> ${escapeHtml(criteria.preferredZips.join(", ") || "Any in selected counties")} · <strong>Financing:</strong> ${escapeHtml(criteria.financing.join(", ").replaceAll("_", " "))} · <strong>Close:</strong> ${criteria.closeSpeedDays ? `${criteria.closeSpeedDays} days` : "Not recorded"}</p>
+    <p class="buyer-detail"><strong>Contact:</strong> ${escapeHtml(buyer.contactStatus.replaceAll("_", " "))} · <strong>Verified purchases:</strong> ${buyer.verifiedPurchaseCount} · <strong>GNS closings:</strong> ${buyer.gnsClosingCount} · <strong>Retrades:</strong> ${buyer.retradeCount} · <strong>Reliability:</strong> ${buyer.reliabilityScore === undefined ? "Not rated" : `${buyer.reliabilityScore}/100`}</p>
+  </article>`;
+}
+
+async function loadBuyers(message = "") {
+  const list = $("#buyer-list");
+  list.innerHTML = '<p class="loading">Loading buyer profiles…</p>';
+  const params = new URLSearchParams({ limit: "50" });
+  if ($("#buyer-status-filter").value) params.set("status", $("#buyer-status-filter").value);
+  if ($("#buyer-county-filter").value) params.set("county", $("#buyer-county-filter").value);
+  try {
+    const body = await send(`/api/buyers?${params}`, {});
+    if (!body.persistence) {
+      list.innerHTML = '<div class="empty">The buyer database is available when Supabase is connected.</div>';
+      return;
+    }
+    if (body.buyerDatabaseAvailable === false) {
+      list.innerHTML = '<div class="empty">Apply the Phase 2 buyer-database migration before recording buyers.</div>';
+      return;
+    }
+    loadedBuyers = body.buyers;
+    list.innerHTML = `${message ? `<div class="success-message">${escapeHtml(message)}</div>` : ""}${loadedBuyers.length ? loadedBuyers.map(renderBuyer).join("") : '<div class="empty">No buyer profiles match these filters.</div>'}`;
+  } catch (error) {
+    list.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
+  }
+}
+
+function checkedValues(form, name) {
+  return [...form.querySelectorAll(`[name="${name}"]:checked`)].map((input) => input.value);
+}
+
+function optionalNumber(data, name) {
+  return data[name] === "" || data[name] === undefined ? undefined : Number(data[name]);
+}
+
+function resetBuyerForm() {
+  const form = $("#buyer-form");
+  form.reset();
+  form.elements.buyerId.value = "";
+  $("#buyer-feedback").innerHTML = "";
+}
+
+function setCheckedValues(form, name, values) {
+  form.querySelectorAll(`[name="${name}"]`).forEach((input) => { input.checked = values.includes(input.value); });
+}
+
+function editBuyer(buyer) {
+  const form = $("#buyer-form");
+  const criteria = buyer.criteria;
+  for (const name of ["buyerId", "displayName", "companyName", "email", "phone", "status", "contactStatus", "source", "sourceUrl", "notes", "verifiedPurchaseCount", "gnsClosingCount", "retradeCount", "reliabilityScore"]) {
+    form.elements[name].value = name === "buyerId" ? buyer.id : buyer[name] ?? "";
+  }
+  for (const name of ["purchasePriceMin", "purchasePriceMax", "arvMin", "arvMax", "maxRepairs", "squareFeetMin", "squareFeetMax", "yearBuiltMin", "yearBuiltMax", "closeSpeedDays", "hoaPreference"]) {
+    form.elements[name].value = criteria[name] ?? (name === "hoaPreference" ? "EITHER" : "");
+  }
+  form.elements.preferredZips.value = criteria.preferredZips.join(", ");
+  setCheckedValues(form, "preferredCounties", criteria.preferredCounties);
+  setCheckedValues(form, "propertyTypes", criteria.propertyTypes);
+  setCheckedValues(form, "occupancies", criteria.occupancies);
+  setCheckedValues(form, "financing", criteria.financing);
+  form.scrollIntoView({ behavior: "smooth", block: "start" });
+  form.elements.displayName.focus({ preventScroll: true });
+}
+
+$("#refresh-buyers").addEventListener("click", () => loadBuyers());
+$("#new-buyer").addEventListener("click", resetBuyerForm);
+$("#buyer-status-filter").addEventListener("change", () => loadBuyers());
+$("#buyer-county-filter").addEventListener("change", () => loadBuyers());
+
+$("#buyer-list").addEventListener("click", (event) => {
+  const button = event.target.closest(".buyer-edit");
+  if (!button) return;
+  const buyer = loadedBuyers.find((item) => item.id === button.dataset.buyerId);
+  if (buyer) editBuyer(buyer);
+});
+
+$("#buyer-form").elements.status.addEventListener("change", (event) => {
+  if (event.target.value === "DO_NOT_CONTACT") $("#buyer-form").elements.contactStatus.value = "DO_NOT_CONTACT";
+  else if ($("#buyer-form").elements.contactStatus.value === "DO_NOT_CONTACT") $("#buyer-form").elements.contactStatus.value = "UNVERIFIED";
+});
+$("#buyer-form").elements.contactStatus.addEventListener("change", (event) => {
+  if (event.target.value === "DO_NOT_CONTACT") $("#buyer-form").elements.status.value = "DO_NOT_CONTACT";
+  else if ($("#buyer-form").elements.status.value === "DO_NOT_CONTACT") $("#buyer-form").elements.status.value = "ACTIVE";
+});
+$("#buyer-form").querySelectorAll('[name="occupancies"]').forEach((input) => input.addEventListener("change", () => {
+  if (!input.checked) return;
+  $("#buyer-form").querySelectorAll('[name="occupancies"]').forEach((other) => {
+    if (other !== input && (input.value === "ANY" || other.value === "ANY")) other.checked = false;
+  });
+}));
+
+$("#buyer-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const button = event.submitter;
+  const feedback = $("#buyer-feedback");
+  button.disabled = true;
+  feedback.innerHTML = "";
+  try {
+    const data = Object.fromEntries(new FormData(form));
+    const numberFields = ["purchasePriceMin", "purchasePriceMax", "arvMin", "arvMax", "maxRepairs", "squareFeetMin", "squareFeetMax", "yearBuiltMin", "yearBuiltMax", "closeSpeedDays", "reliabilityScore"];
+    const criteria = {
+      preferredCounties: checkedValues(form, "preferredCounties"),
+      preferredZips: String(data.preferredZips || "").split(/[\s,]+/).filter(Boolean),
+      propertyTypes: checkedValues(form, "propertyTypes"),
+      hoaPreference: data.hoaPreference,
+      occupancies: checkedValues(form, "occupancies"),
+      financing: checkedValues(form, "financing"),
+    };
+    for (const name of numberFields.filter((name) => name !== "reliabilityScore")) {
+      const value = optionalNumber(data, name);
+      if (value !== undefined) criteria[name] = value;
+    }
+    const payload = {
+      ...(data.buyerId ? { id: data.buyerId } : {}),
+      displayName: data.displayName,
+      companyName: data.companyName,
+      email: data.email,
+      phone: data.phone,
+      status: data.status,
+      contactStatus: data.contactStatus,
+      source: data.source,
+      sourceUrl: data.sourceUrl,
+      notes: data.notes,
+      verifiedPurchaseCount: Number(data.verifiedPurchaseCount),
+      gnsClosingCount: Number(data.gnsClosingCount),
+      retradeCount: Number(data.retradeCount),
+      ...(optionalNumber(data, "reliabilityScore") !== undefined ? { reliabilityScore: optionalNumber(data, "reliabilityScore") } : {}),
+      criteria,
+    };
+    const body = await send("/api/buyers", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    resetBuyerForm();
+    await loadBuyers(`${body.created ? "Created" : "Updated"} ${body.buyer.displayName}.`);
+  } catch (error) {
+    feedback.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
+  } finally {
+    button.disabled = false;
+  }
+});
 
 $("#lead-form").addEventListener("submit", async (event) => {
   event.preventDefault();
