@@ -1,7 +1,7 @@
 import { ZodError } from "zod";
 import { TrusteeSaleCsvAdapter } from "../../src/adapters/csv/csv-adapter";
 import { evaluateOpportunity } from "../../src/services/evaluate-opportunity";
-import { persistEvaluation } from "../../src/services/supabase-repository";
+import { isModernSupabaseSecretKey, persistEvaluation } from "../../src/services/supabase-repository";
 
 const jsonHeaders = { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" };
 
@@ -26,15 +26,17 @@ async function parseBoundedText(request: Request, maxBytes: number): Promise<str
 }
 
 async function maybePersist(env: Env, evaluation: ReturnType<typeof evaluateOpportunity>): Promise<boolean> {
-  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) return false;
-  await persistEvaluation({ url: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY }, evaluation);
+  if (!env.SUPABASE_URL && !env.SUPABASE_SECRET_KEY) return false;
+  if (!env.SUPABASE_URL || !env.SUPABASE_SECRET_KEY) throw new Error("Supabase persistence configuration is incomplete");
+  await persistEvaluation({ url: env.SUPABASE_URL, secretKey: env.SUPABASE_SECRET_KEY }, evaluation);
   return true;
 }
 
 async function handleApi(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
   if (url.pathname === "/api/health" && request.method === "GET") {
-    return json({ ok: true, service: "gns-success-wholesale-engine", persistence: Boolean(env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) });
+    const persistence = Boolean(env.SUPABASE_URL && isModernSupabaseSecretKey(env.SUPABASE_SECRET_KEY));
+    return json({ ok: true, service: "gns-success-wholesale-engine", persistence });
   }
   if (url.pathname === "/api/evaluate" && request.method === "POST") {
     const raw: unknown = JSON.parse(await parseBoundedText(request, 65_536));

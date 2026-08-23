@@ -2,16 +2,22 @@ import type { OpportunityEvaluation } from "../domain/opportunities/types";
 
 export interface SupabaseConfig {
   url: string;
-  serviceRoleKey: string;
+  secretKey: string;
+}
+
+export function isModernSupabaseSecretKey(value: string): boolean {
+  return value.startsWith("sb_secret_") && value.length > "sb_secret_".length;
 }
 
 async function insert(config: SupabaseConfig, table: string, body: Record<string, unknown>, onConflict?: string): Promise<void> {
+  if (!isModernSupabaseSecretKey(config.secretKey)) {
+    throw new Error("SUPABASE_SECRET_KEY must be a modern Supabase sb_secret_ key");
+  }
   const query = onConflict ? `?on_conflict=${encodeURIComponent(onConflict)}` : "";
   const response = await fetch(`${config.url}/rest/v1/${table}${query}`, {
     method: "POST",
     headers: {
-      apikey: config.serviceRoleKey,
-      Authorization: `Bearer ${config.serviceRoleKey}`,
+      apikey: config.secretKey,
       "Content-Type": "application/json",
       Prefer: "return=minimal,resolution=merge-duplicates",
     },

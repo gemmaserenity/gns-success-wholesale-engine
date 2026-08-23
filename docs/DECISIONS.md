@@ -32,7 +32,7 @@ The first milestone uses one Cloudflare Worker plus Workers Static Assets and a 
 
 ### Stateless local mode with optional Supabase persistence
 
-Underwriting remains fully usable with no credentials. When `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are present, the Worker writes provenance and evaluations to Supabase. Supabase remains the production source of truth; local stateless mode is a development and demonstration fallback, not production storage.
+Underwriting remains fully usable with no credentials. When `SUPABASE_URL` and the modern `SUPABASE_SECRET_KEY` (`sb_secret_…`) are present, the Worker writes provenance and evaluations to Supabase. The legacy JWT-based `service_role` key is intentionally unsupported. Supabase remains the production source of truth; local stateless mode is a development and demonstration fallback, not production storage.
 
 ### Cloudflare Access as the Phase 1 authentication boundary
 
