@@ -36,3 +36,21 @@ A `.env.example` file documents expected variable names without storing credenti
 `SUPABASE_SECRET_KEY` must be a modern key from Supabase **Settings → API Keys → Secret keys** with the `sb_secret_` prefix. The legacy JWT-based `service_role` key, `anon` key, publishable key, and JWT signing secret are not accepted. This secret is Worker-only: never add it to browser code, a tracked file, or a command argument. Production requests are denied unless they arrive with Cloudflare Access's authenticated assertion header. Local development uses blank values in ignored `.dev.vars` and remains stateless.
 
 The current application does not use Supabase Auth for operator sign-in, so no Supabase Site URL or redirect URL is required for this hostname. Cloudflare Access authenticates operators at `wholesale.gns-success.com`; Supabase is accessed only by the Worker through its server-side URL and secret key. If Supabase Auth is introduced later, add `https://wholesale.gns-success.com` to the Supabase Auth URL configuration at that time.
+
+## Phase 2 milestone 1 deployment
+
+Apply migrations in filename order. After Phase 1 is present, run:
+
+```text
+supabase/migrations/202608230001_phase2_opportunity_history.sql
+```
+
+Then deploy or push the Worker release and verify:
+
+1. `GET /api/health` reports persistence enabled.
+2. A representative evaluation returns `persisted: true`.
+3. The **Opportunity queue** tab loads without a migration notice.
+4. Supabase contains linked rows in `properties`, `owners`, `ownership_interests`, `distress_events`, `opportunity_evaluations`, `pipeline_events`, and `audit_events`.
+5. Re-evaluating the same county/APN increases its history count while keeping a single current queue card.
+
+The Worker includes a temporary rolling-release fallback: if the transactional RPC is not present yet, it continues the original Phase 1 `source_records` and `opportunity_evaluations` writes. The queue remains disabled with an explicit migration notice until this migration is applied. Remove the fallback only after every deployed environment has the Phase 2 schema.

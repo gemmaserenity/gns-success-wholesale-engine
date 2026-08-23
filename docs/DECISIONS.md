@@ -41,3 +41,17 @@ Production requests require the `Cf-Access-Jwt-Assertion` header, which Cloudfla
 ### Operator-assisted county ingestion first
 
 Official Maricopa and Pinal Recorder/Assessor sites are preserved as source references, but brittle HTML automation is not a dependency. Manual input and CSV are the viable first adapters while lawful, stable automated endpoints are evaluated.
+
+## 2026-08-23 — Phase 2 durable opportunity desk
+
+### Transactional persistence through a restricted PostgreSQL function
+
+The Worker now sends one validated evaluation envelope to a `security definer` PostgreSQL function restricted to `service_role`. PostgreSQL atomically upserts provenance and normalized entities, inserts the immutable evaluation, and records pipeline and audit evidence. This prevents a network failure midway through several REST calls from leaving a partially persisted opportunity.
+
+### Latest-per-property queue with immutable history
+
+Evaluations remain append-only. A security-invoker view ranks them by normalized county/APN and exposes the newest record with a history count. This preserves evidence changes over time while keeping the operator queue focused on one current card per property.
+
+### Migration-safe Worker rollout
+
+Until the Phase 2 migration reaches an environment, the Worker falls back to the two Phase 1 writes and shows a clear queue migration notice. This allows code and schema to be released without interrupting active screening.

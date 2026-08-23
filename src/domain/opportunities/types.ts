@@ -91,3 +91,21 @@ export interface OpportunityEvaluation {
   nextAction: NextAction;
   duplicate: boolean;
 }
+
+export interface PersistedOpportunity {
+  evaluationId: string;
+  propertyId?: string;
+  deduplicationKey: string;
+  county: County;
+  apn: string;
+  address: string;
+  ownerName: string;
+  trusteeSaleDate?: string;
+  state: PipelineState;
+  score: number;
+  confidence: ConfidenceLevel;
+  nextAction: NextAction;
+  baseUnderwriting: UnderwritingScenario;
+  evaluatedAt: string;
+  historyCount: number;
+}

@@ -1,7 +1,17 @@
 import { ZodError } from "zod";
 import { TrusteeSaleCsvAdapter } from "../../src/adapters/csv/csv-adapter";
+import { normalizeApn, normalizeCounty } from "../../src/domain/opportunities/normalize";
+import { counties, pipelineStates } from "../../src/domain/opportunities/types";
+import type { County, PipelineState } from "../../src/domain/opportunities/types";
 import { evaluateOpportunity } from "../../src/services/evaluate-opportunity";
-import { isModernSupabaseSecretKey, persistEvaluation } from "../../src/services/supabase-repository";
+import {
+  getOpportunityHistory,
+  isModernSupabaseSecretKey,
+  listOpportunities,
+  persistEvaluation,
+  SupabaseFeatureUnavailableError,
+  type SupabaseConfig,
+} from "../../src/services/supabase-repository";
 
 const jsonHeaders = { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" };
 
@@ -32,11 +42,87 @@ async function maybePersist(env: Env, evaluation: ReturnType<typeof evaluateOppo
   return true;
 }
 
+function supabaseConfig(env: Env): SupabaseConfig | undefined {
+  if (!env.SUPABASE_URL && !env.SUPABASE_SECRET_KEY) return undefined;
+  if (!env.SUPABASE_URL || !env.SUPABASE_SECRET_KEY) throw new Error("Supabase persistence configuration is incomplete");
+  return { url: env.SUPABASE_URL, secretKey: env.SUPABASE_SECRET_KEY };
+}
+
+function parseLimit(value: string | null, fallback: number): number {
+  if (value === null || value === "") return fallback;
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 1 || parsed > 100) {
+    throw new RangeError("Limit must be a whole number between 1 and 100");
+  }
+  return parsed;
+}
+
+function isPipelineState(value: string): value is PipelineState {
+  return pipelineStates.some((state) => state === value);
+}
+
+function isCounty(value: string): value is County {
+  return counties.some((county) => county === value);
+}
+
 async function handleApi(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
   if (url.pathname === "/api/health" && request.method === "GET") {
     const persistence = Boolean(env.SUPABASE_URL && isModernSupabaseSecretKey(env.SUPABASE_SECRET_KEY));
     return json({ ok: true, service: "gns-success-wholesale-engine", persistence });
+  }
+  if (url.pathname === "/api/opportunities" && request.method === "GET") {
+    const config = supabaseConfig(env);
+    if (!config) return json({ opportunities: [], persistence: false });
+    const stateValue = url.searchParams.get("state")?.toUpperCase();
+    const countyValue = url.searchParams.get("county")?.toUpperCase();
+    let state: PipelineState | undefined;
+    let county: County | undefined;
+    if (stateValue) {
+      if (!isPipelineState(stateValue)) return json({ error: "Unsupported opportunity state filter." }, 422);
+      state = stateValue;
+    }
+    if (countyValue) {
+      if (!isCounty(countyValue)) return json({ error: "Unsupported county filter." }, 422);
+      county = countyValue;
+    }
+    try {
+      const opportunities = await listOpportunities(config, {
+        limit: parseLimit(url.searchParams.get("limit"), 50),
+        ...(state ? { state } : {}),
+        ...(county ? { county } : {}),
+      });
+      return json({ opportunities, persistence: true, historyAvailable: true });
+    } catch (error) {
+      if (error instanceof SupabaseFeatureUnavailableError) {
+        return json({ opportunities: [], persistence: true, historyAvailable: false });
+      }
+      throw error;
+    }
+  }
+  if (url.pathname === "/api/opportunities/history" && request.method === "GET") {
+    const config = supabaseConfig(env);
+    if (!config) return json({ history: [], persistence: false });
+    const countyValue = url.searchParams.get("county");
+    const apnValue = url.searchParams.get("apn");
+    if (!countyValue || !apnValue) return json({ error: "County and APN are required." }, 422);
+    const county = normalizeCounty(countyValue);
+    const apn = normalizeApn(apnValue);
+    if (apn.length < 3) return json({ error: "APN must contain at least three letters or digits." }, 422);
+    try {
+      const history = await getOpportunityHistory(
+        config,
+        county,
+        apn,
+        parseLimit(url.searchParams.get("limit"), 25),
+      );
+      return json({ history, persistence: true, historyAvailable: true });
+    } catch (error) {
+      if (error instanceof SupabaseFeatureUnavailableError) {
+        return json({ history: [], persistence: true, historyAvailable: false });
+      }
+      throw error;
+    }
   }
   if (url.pathname === "/api/evaluate" && request.method === "POST") {
     const raw: unknown = JSON.parse(await parseBoundedText(request, 65_536));

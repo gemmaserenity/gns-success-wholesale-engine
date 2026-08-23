@@ -36,6 +36,8 @@ Supabase/PostgreSQL is the canonical system of record.
 
 Business state must not exist only inside AI context or temporary Worker memory.
 
+Phase 2 milestone 1 persists each evaluation through one transactional database function and exposes a latest-per-property view plus immutable evaluation history. The Worker remains the only browser-facing database boundary.
+
 ### GitHub
 
 GitHub is the canonical source repository and deployment history.

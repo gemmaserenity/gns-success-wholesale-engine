@@ -27,9 +27,11 @@ Build a functioning private system capable of:
 
 Add:
 
-- improved property enrichment
-- buyer database
-- buyer-demand scoring
+- [x] normalized property, owner, ownership-interest, and distress-event persistence
+- [x] durable opportunity queue and evaluation history
+- [ ] improved property enrichment
+- [ ] buyer database
+- [ ] buyer-demand scoring
 - selective skip tracing
 - seller-facing portal
 - inbound seller qualification

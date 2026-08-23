@@ -31,7 +31,7 @@
   <main>
     <section class="hero">
       <div>
-        <p class="eyebrow">PHASE 1 · ARIZONA TRUSTEE SALES</p>
+        <p class="eyebrow">PHASE 2 · QUALIFICATION AND ACQUISITION</p>
         <h2>Put the economics first.</h2>
         <p>Normalize a public record, test the wholesale spread, and see exactly why it should advance or stop.</p>
       </div>
@@ -44,6 +44,7 @@
     <nav class="tabs" aria-label="Input method">
       <button class="tab active" data-tab="manual">Manual evaluation</button>
       <button class="tab" data-tab="csv">CSV batch</button>
+      <button class="tab" data-tab="opportunities">Opportunity queue</button>
     </nav>
 
     <section id="manual-panel" class="panel">
@@ -91,6 +92,16 @@
         <a href="/trustee-sale-template.csv" download>Download template</a>
       </div>
       <button id="import-button" class="primary" type="button">Import and evaluate</button>
+    </section>
+
+    <section id="opportunities-panel" class="panel hidden">
+      <div class="section-heading"><h3>Durable opportunity queue</h3><p>The latest evaluation for each county + APN, ranked by score.</p></div>
+      <div class="queue-controls">
+        <label>State<select id="queue-state"><option value="">All states</option><option value="QUALIFIED">Qualified</option><option value="PRELIM_SCREEN">Preliminary screen</option><option value="REJECTED">Rejected</option></select></label>
+        <label>County<select id="queue-county"><option value="">Both counties</option><option value="MARICOPA">Maricopa</option><option value="PINAL">Pinal</option></select></label>
+        <button id="refresh-opportunities" class="secondary" type="button">Refresh queue</button>
+      </div>
+      <div id="opportunity-list" aria-live="polite"></div>
     </section>
 
     <section id="results" aria-live="polite"></section>

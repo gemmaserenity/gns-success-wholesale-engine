@@ -5,6 +5,16 @@ const optionalNumber = z.preprocess(
   z.number().finite().nonnegative().optional(),
 );
 
+const optionalPositiveInteger = z.preprocess(
+  (value) => value === "" || value === undefined || value === null ? undefined : Number(value),
+  z.number().int().positive().optional(),
+);
+
+const optionalYear = z.preprocess(
+  (value) => value === "" || value === undefined || value === null ? undefined : Number(value),
+  z.number().int().min(1800).max(2200).optional(),
+);
+
 const requiredNumber = z.preprocess(
   (value) => typeof value === "number" ? value : Number(value),
   z.number().finite().nonnegative(),
@@ -33,8 +43,8 @@ export const rawLeadSchema = z.object({
   trusteeSaleDate: z.string().date().optional().or(z.literal("")),
   recordedDate: z.string().date().optional().or(z.literal("")),
   propertyType: z.string().trim().max(80).optional(),
-  squareFeet: optionalNumber,
-  yearBuilt: optionalNumber,
+  squareFeet: optionalPositiveInteger,
+  yearBuilt: optionalYear,
   arvLow: requiredNumber,
   arvHigh: requiredNumber,
   repairsLow: requiredNumber,

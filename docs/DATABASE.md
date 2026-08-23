@@ -36,3 +36,9 @@ supabase/migrations/
 ## Phase 1 schema
 
 Migration `202608220001_phase1_opportunity_screening.sql` establishes source provenance, normalized property/owner/distress foundations, immutable evaluations, auditable pipeline events, human overrides, indexes, constraints, and row-level security. Authenticated operators receive read access; the private Worker performs ingestion with its modern server-side Supabase secret key. Human overrides require the logged-in operator's own user ID and a written rationale.
+
+## Phase 2 milestone 1
+
+Migration `202608230001_phase2_opportunity_history.sql` activates the normalized foundation. The private `persist_opportunity_evaluation(jsonb)` function writes the source record, property, owner, ownership interest, distress event, immutable evaluation, system pipeline event, and audit event in one PostgreSQL transaction. The function is executable only by `service_role`, uses a fixed search path, and is idempotent for a repeated evaluation UUID.
+
+`current_opportunities` is a security-invoker view that returns only the newest evaluation for each normalized `AZ:<COUNTY>:<APN>` key, plus the number of historical evaluations. Historical Phase 1 evaluations remain visible even when their new property foreign key is null; all new Phase 2 writes receive the normalized links.

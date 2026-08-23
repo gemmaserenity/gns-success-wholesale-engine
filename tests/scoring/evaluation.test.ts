@@ -35,4 +35,11 @@ describe("opportunity decisioning", () => {
   it("caps scores at 100 for a high-profit opportunity", () => {
     expect(evaluateOpportunity(highProfit, { now }).score.total).toBeLessThanOrEqual(100);
   });
+
+  it.each([
+    ["fractional square footage", { ...excellentOpportunity, squareFeet: 1450.5 }],
+    ["impossible construction year", { ...excellentOpportunity, yearBuilt: 1700 }],
+  ])("rejects %s before normalized database persistence", (_name, input) => {
+    expect(() => evaluateOpportunity(input, { now })).toThrow();
+  });
 });

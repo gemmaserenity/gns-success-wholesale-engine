@@ -28,7 +28,20 @@ The system should minimize low-value human work and surface only opportunities t
 
 See `/docs` for architecture and implementation documentation.
 
-## Phase 1 working milestone
+## Phase 2 operational milestone
+
+Phase 2 now begins with a durable opportunity desk:
+
+- normalized property, owner, ownership, distress-event, evaluation, pipeline, and audit records persist in one database transaction;
+- repeated evaluation requests are idempotent;
+- the dashboard shows the latest evaluation for every county/APN in a ranked, filterable queue;
+- every opportunity exposes its evaluation history;
+- database responses are runtime-validated before they reach the browser;
+- a rolling-release fallback preserves Phase 1 writes until the Phase 2 migration is applied.
+
+Apply `supabase/migrations/202608230001_phase2_opportunity_history.sql` before relying on the queue in production. See [`docs/PHASE-2-MILESTONE-1.md`](docs/PHASE-2-MILESTONE-1.md) for the operational handoff.
+
+## Phase 1 foundation
 
 The repository now contains an operational Arizona trustee-sale screening slice:
 
@@ -65,4 +78,4 @@ npm run build
 
 Production deployment and secret setup are documented in `docs/DEPLOYMENT.md`.
 
-For a complete operational recap, system map, usage guide, and Phase 2 handoff, read [`docs/PHASE-1-SESSION-NOTE.md`](docs/PHASE-1-SESSION-NOTE.md).
+For the original screening-engine recap, read [`docs/PHASE-1-SESSION-NOTE.md`](docs/PHASE-1-SESSION-NOTE.md).

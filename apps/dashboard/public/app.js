@@ -8,9 +8,9 @@ fetch("/api/health").then((response) => response.json()).then((health) => {
 
 document.querySelectorAll(".tab").forEach((tab) => tab.addEventListener("click", () => {
   document.querySelectorAll(".tab").forEach((item) => item.classList.toggle("active", item === tab));
-  $("#manual-panel").classList.toggle("hidden", tab.dataset.tab !== "manual");
-  $("#csv-panel").classList.toggle("hidden", tab.dataset.tab !== "csv");
+  document.querySelectorAll("main > .panel").forEach((panel) => panel.classList.toggle("hidden", panel.id !== `${tab.dataset.tab}-panel`));
   $("#results").innerHTML = "";
+  if (tab.dataset.tab === "opportunities") loadOpportunities();
 }));
 
 function escapeHtml(value) {
@@ -30,11 +30,58 @@ function renderEvaluation(item) {
   </article>`;
 }
 
+function renderOpportunity(item) {
+  const style = item.state === "REJECTED" ? "reject" : item.nextAction === "HUMAN_REVIEW" ? "review" : "";
+  const evaluatedAt = new Date(item.evaluatedAt).toLocaleString();
+  return `<article class="opportunity-card ${style}">
+    <div class="opportunity-main">
+      <div><p class="eyebrow">${escapeHtml(item.nextAction.replaceAll("_", " "))}</p><h4>${escapeHtml(item.address)}</h4><p>${escapeHtml(item.county)} · APN ${escapeHtml(item.apn)} · ${escapeHtml(item.ownerName)}</p></div>
+      <div class="score"><strong>${item.score}</strong><span>/ 100 · ${escapeHtml(item.state.replaceAll("_", " "))}</span></div>
+    </div>
+    <div class="queue-metrics">
+      <div><span>Base assignment</span><strong>${money.format(item.baseUnderwriting.expectedAssignmentFee)}</strong></div>
+      <div><span>Max contract</span><strong>${money.format(item.baseUnderwriting.maximumContractForTargetFee)}</strong></div>
+      <div><span>Confidence</span><strong>${escapeHtml(item.confidence)}</strong></div>
+      <div><span>Last evaluated</span><strong>${escapeHtml(evaluatedAt)}</strong></div>
+    </div>
+    <div class="history-row"><span>${item.historyCount} evaluation${item.historyCount === 1 ? "" : "s"} on record</span><button class="history-button" type="button" data-county="${escapeHtml(item.county)}" data-apn="${escapeHtml(item.apn)}" aria-expanded="false">View history</button></div>
+    <div class="history-list hidden"></div>
+  </article>`;
+}
+
+function renderHistory(history) {
+  return `<ol class="timeline">${history.map((item) => `<li><div><strong>${escapeHtml(item.state.replaceAll("_", " "))} · ${item.score}/100</strong><span>${escapeHtml(new Date(item.evaluatedAt).toLocaleString())}</span></div><p>${escapeHtml(item.nextAction.replaceAll("_", " "))} · Base assignment ${money.format(item.baseUnderwriting.expectedAssignmentFee)}</p></li>`).join("")}</ol>`;
+}
+
 async function send(url, options) {
   const response = await fetch(url, options);
   const body = await response.json();
   if (!response.ok) throw new Error(body.issues?.map((issue) => issue.message).join("; ") || body.error || "Request failed");
   return body;
+}
+
+async function loadOpportunities() {
+  const list = $("#opportunity-list");
+  list.innerHTML = '<p class="loading">Loading persisted opportunities…</p>';
+  const params = new URLSearchParams({ limit: "50" });
+  if ($("#queue-state").value) params.set("state", $("#queue-state").value);
+  if ($("#queue-county").value) params.set("county", $("#queue-county").value);
+  try {
+    const body = await send(`/api/opportunities?${params}`, {});
+    if (!body.persistence) {
+      list.innerHTML = '<div class="empty">The durable queue is available when Supabase is connected.</div>';
+      return;
+    }
+    if (body.historyAvailable === false) {
+      list.innerHTML = '<div class="empty">The Phase 2 database migration must be applied before the durable queue can load.</div>';
+      return;
+    }
+    list.innerHTML = body.opportunities.length
+      ? body.opportunities.map(renderOpportunity).join("")
+      : '<div class="empty">No opportunities match these filters.</div>';
+  } catch (error) {
+    list.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
+  }
 }
 
 $("#lead-form").addEventListener("submit", async (event) => {
@@ -66,4 +113,34 @@ $("#import-button").addEventListener("click", async () => {
     $("#results").innerHTML = `<p class="batch-summary"><strong>${summary.imported}</strong> evaluated · <strong>${summary.qualified}</strong> qualified · <strong>${summary.rejected}</strong> rejected · <strong>${summary.duplicates}</strong> duplicates</p>${body.evaluations.sort((a,b) => b.score.total-a.score.total).map(renderEvaluation).join("")}`;
   } catch (error) { $("#results").innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`; }
   finally { button.disabled = false; }
+});
+
+$("#refresh-opportunities").addEventListener("click", loadOpportunities);
+$("#queue-state").addEventListener("change", loadOpportunities);
+$("#queue-county").addEventListener("change", loadOpportunities);
+
+$("#opportunity-list").addEventListener("click", async (event) => {
+  const button = event.target.closest(".history-button");
+  if (!button) return;
+  const historyList = button.closest(".opportunity-card").querySelector(".history-list");
+  if (!historyList.classList.contains("hidden")) {
+    historyList.classList.add("hidden");
+    button.textContent = "View history";
+    button.setAttribute("aria-expanded", "false");
+    return;
+  }
+  button.disabled = true;
+  historyList.classList.remove("hidden");
+  historyList.innerHTML = '<p class="loading">Loading history…</p>';
+  try {
+    const params = new URLSearchParams({ county: button.dataset.county, apn: button.dataset.apn });
+    const body = await send(`/api/opportunities/history?${params}`, {});
+    historyList.innerHTML = renderHistory(body.history);
+    button.textContent = "Hide history";
+    button.setAttribute("aria-expanded", "true");
+  } catch (error) {
+    historyList.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
+  } finally {
+    button.disabled = false;
+  }
 });
