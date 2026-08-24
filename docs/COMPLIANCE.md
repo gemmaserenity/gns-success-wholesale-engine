@@ -29,6 +29,8 @@ An acquisition-case decision is internal decision support, not permission to con
 
 Acquisition diligence is also decision support. Each review preserves an immutable, zero-cost evidence envelope for property identity, owner identity, seller authority, title, liens/payoffs, taxes, distress timing, occupancy, condition/repairs, value, buyer demand, wholesale disclosure, and consent/communications. Missing work remains `OPEN`; a material impediment remains `BLOCKED`; required checks cannot be dismissed as not applicable. `READY_FOR_HUMAN_OFFER_AUTHORIZATION` means only that the recorded checklist is complete and current enough to present to a human. It neither records authorization nor creates terms, documents, contact permission, or outreach capability.
 
+An internal term authorization is not an offer to a seller. It records a human's bounded internal authority against the latest ready diligence, expires within 72 hours, and becomes stale when underlying evidence changes. Authorization requires renewed material-fact and wholesale-disclosure attestations. Decline and revocation are append-only. The Access identity is stored as a one-way fingerprint rather than an email address; the selected acquisitions-manager or principal role is an explicit attestation and does not replace centrally managed role assignment. No milestone 3 action changes consent, authorizes a communication channel, produces a contract or disclosure, creates a signature request, or sends anything.
+
 Arizona-specific wholesale transaction requirements should be versioned and configurable.
 
 This documentation is operational guidance and not a substitute for legal advice.

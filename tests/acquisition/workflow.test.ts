@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { acquisitionResearchInputSchema, acquisitionDecisionInputSchema, acquisitionDiligenceInputSchema } from "../../src/domain/acquisition/schema";
-import { assessAcquisitionDiligence, buildSellerAcquisitionLead, evaluateAcquisitionDecisionGate, evaluateDiligenceEntryGate } from "../../src/domain/acquisition/workflow";
+import { acquisitionResearchInputSchema, acquisitionDecisionInputSchema, acquisitionDiligenceInputSchema, offerAuthorizationInputSchema } from "../../src/domain/acquisition/schema";
+import { assessAcquisitionDiligence, buildSellerAcquisitionLead, evaluateAcquisitionDecisionGate, evaluateDiligenceEntryGate, evaluateOfferAuthorizationGate } from "../../src/domain/acquisition/workflow";
 import { diligenceItemKinds } from "../../src/domain/acquisition/types";
-import type { AcquisitionCaseStatus, AcquisitionDiligenceInput, AcquisitionResearchInput } from "../../src/domain/acquisition/types";
+import type { AcquisitionCaseStatus, AcquisitionDiligenceInput, AcquisitionDiligenceStatus, AcquisitionResearchInput, OfferAuthorizationInput } from "../../src/domain/acquisition/types";
 import type { SellerInquiry } from "../../src/domain/seller-intake/types";
 
 const inquiry: SellerInquiry = {
@@ -42,6 +42,23 @@ const diligenceInput: AcquisitionDiligenceInput = {
   summary: "All required diligence items were reviewed against current zero-cost evidence.",
   materialFactsCurrent: true, noOfferGenerated: true, noOutreachInitiated: true,
   items: diligenceItemKinds.map((kind) => ({ kind, status: "SATISFIED", sourceName: "Operator review", sourceType: "OPERATOR_REVIEW", reviewedAt: "2026-08-24T03:00:00.000Z", confidence: 0.9, notes: `Current evidence was reviewed for ${kind}.`, costCents: 0 })),
+};
+
+const diligenceStatus: AcquisitionDiligenceStatus = {
+  ...assessAcquisitionDiligence(diligenceInput), reviewId: "00000000-0000-4000-8000-000000000809",
+  caseId: diligenceInput.caseId, sourceEvaluationId: diligenceInput.sourceEvaluationId,
+  buyerMatchRunId: diligenceInput.buyerMatchRunId, acquisitionDecisionId: diligenceInput.acquisitionDecisionId,
+  summary: diligenceInput.summary, materialFactsCurrent: true, reviewedAt: "2026-08-24T03:00:00.000Z", items: diligenceInput.items,
+};
+
+const offerAuthorizationInput: OfferAuthorizationInput = {
+  caseId: status.caseId, inquiryId: status.inquiryId, diligenceReviewId: diligenceStatus.reviewId,
+  sourceEvaluationId: status.evaluation.evaluationId, buyerMatchRunId: status.buyerDemand?.runId ?? "",
+  acquisitionDecisionId: advancedStatus.decision?.decisionId ?? "", decision: "AUTHORIZE_INTERNAL_TERMS",
+  authorizerRole: "ACQUISITIONS_MANAGER", rationale: "Current diligence and bounded economics support this internal authorization decision.",
+  validForHours: 24, terms: { purchasePriceCents: 14_000_000, assignmentFeeTargetCents: 1_000_000, earnestMoneyCents: 100_000, inspectionPeriodDays: 10, closingPeriodDays: 21 },
+  materialFactsReconfirmed: true, disclosureReviewed: true, internalAuthorizationOnly: true,
+  noOfferGenerated: true, noOutreachInitiated: true,
 };
 
 describe("seller acquisition workflow", () => {
@@ -86,5 +103,19 @@ describe("seller acquisition workflow", () => {
     expect(evaluateDiligenceEntryGate(advancedStatus, diligenceInput)).toEqual({ allowed: true, reasonCodes: ["DILIGENCE_REVIEW_ALLOWED"] });
     expect(evaluateDiligenceEntryGate(status, diligenceInput)).toMatchObject({ allowed: false, reasonCodes: expect.arrayContaining(["ACQUISITION_ADVANCE_REQUIRED"]) });
     expect(evaluateDiligenceEntryGate({ ...advancedStatus, decision: { ...advancedStatus.decision!, sourceEvaluationId: "00000000-0000-4000-8000-000000000809" } }, diligenceInput)).toMatchObject({ allowed: false, reasonCodes: expect.arrayContaining(["ACQUISITION_DECISION_STALE"]) });
+  });
+
+  it("requires explicit bounded internal terms or a term-free decline", () => {
+    expect(offerAuthorizationInputSchema.safeParse(offerAuthorizationInput).success).toBe(true);
+    expect(offerAuthorizationInputSchema.safeParse({ ...offerAuthorizationInput, terms: undefined }).success).toBe(false);
+    expect(offerAuthorizationInputSchema.safeParse({ ...offerAuthorizationInput, decision: "DECLINE_AUTHORIZATION" }).success).toBe(false);
+    expect(offerAuthorizationInputSchema.safeParse({ ...offerAuthorizationInput, decision: "DECLINE_AUTHORIZATION", terms: undefined, validForHours: undefined }).success).toBe(true);
+  });
+
+  it("authorizes only against current ready diligence and economic ceilings", () => {
+    expect(evaluateOfferAuthorizationGate(advancedStatus, diligenceStatus, offerAuthorizationInput)).toMatchObject({ allowed: true, reasonCodes: ["INTERNAL_TERMS_READY_FOR_AUTHORIZATION"], maximumPurchasePriceCents: 15_220_000 });
+    expect(evaluateOfferAuthorizationGate(advancedStatus, { ...diligenceStatus, readiness: "NEEDS_RESEARCH" }, offerAuthorizationInput)).toMatchObject({ allowed: false, reasonCodes: expect.arrayContaining(["CURRENT_READY_DILIGENCE_REQUIRED"]) });
+    const excessive = { ...offerAuthorizationInput, terms: { ...offerAuthorizationInput.terms!, purchasePriceCents: 15_300_000 } };
+    expect(evaluateOfferAuthorizationGate(advancedStatus, diligenceStatus, excessive)).toMatchObject({ allowed: false, reasonCodes: expect.arrayContaining(["PURCHASE_PRICE_EXCEEDS_TARGET_FEE_CEILING"]) });
   });
 });

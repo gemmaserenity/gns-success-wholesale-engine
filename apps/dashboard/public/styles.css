@@ -364,6 +364,14 @@ label.check .field-caption { gap: 5px; }
 .diligence-ready-for-human-offer-authorization { border-left-color: var(--green); }
 .diligence-blocked { border-left-color: var(--red); }
 .diligence-feedback { margin-top: 10px; }
+.offer-authorization-workspace { display: grid; gap: 12px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+.offer-authorization-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(16rem, 1fr); gap: 12px; align-items: start; }
+.offer-authorization-grid form, .offer-authorization-revocation-form { padding: 14px; border: 1px solid var(--line); background: #fffdf9; }
+.offer-authorization-grid h4 { margin: 0 0 4px; }
+.offer-authorization-status { padding: 12px 14px; border-left: 4px solid var(--amber); background: #faf6f1; }
+.offer-authorization-status.status-authorized { border-left-color: var(--green); }
+.offer-authorization-status p, .offer-authorization-status small { margin: 3px 0; }
+.offer-authorization-feedback { margin-top: 10px; }
 .seller-ai-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
 .seller-ai-heading p, .ai-privacy-note p { margin: 4px 0 0; color: var(--muted); font-size: 11px; }
 .seller-ai-content { display: grid; gap: 12px; margin-top: 12px; }
@@ -376,6 +384,7 @@ label.check .field-caption { gap: 5px; }
 
 @media (max-width: 980px) {
   .buyer-workspace { grid-template-columns: 1fr; }
+  .offer-authorization-grid { grid-template-columns: 1fr; }
   .seller-status-form { grid-template-columns: 1fr 2fr; }
   .seller-status-form .secondary { grid-column: 1/-1; }
 }

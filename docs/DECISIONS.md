@@ -159,3 +159,17 @@ Each review snapshots all 13 acquisition checks with status, source, retrieval/r
 ### Readiness stops before authorization
 
 The deterministic result is limited to `NEEDS_RESEARCH`, `BLOCKED`, or `READY_FOR_HUMAN_OFFER_AUTHORIZATION`. The last state is intentionally phrased as readiness for a future human act: it is not itself authorization. Milestone 2 adds no offer terms, offer generation, sending, signature, provider call, or outreach interface.
+
+## 2026-08-23 — Phase 3 internal offer-authorization milestone
+
+### Authority is evidence-bound, expiring, and revocable
+
+Internal terms may be authorized only against the exact newest ready diligence review and its current evaluation, buyer-demand run, and advance decision. The authorization expires after 24, 48, or 72 hours, becomes stale when any linked evidence changes, and can be revoked only through another append-only event. A current review cannot hold two active authorizations.
+
+### Identity is server-derived and minimized
+
+The private Worker hashes the Cloudflare Access authenticated email and sends only that fingerprint to PostgreSQL. The browser cannot assert the actor identity. The human selects an allowed role as a recorded attestation; centrally administered role assignment remains deferred and the UI states this limitation.
+
+### Internal authorization does not create an offer
+
+The approved values are ceilings and operational limits, not seller-facing language. There is no template engine, document storage, signature integration, delivery action, provider call, or outreach route. Adding any of those is a separately authorized milestone.

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { acquisitionDecisions, diligenceItemKinds, diligenceItemStatuses, ownerIdentityStatuses, sellerAuthorityStatuses } from "./types";
+import { acquisitionDecisions, diligenceItemKinds, diligenceItemStatuses, offerAuthorizationDecisions, offerAuthorizationRoles, ownerIdentityStatuses, sellerAuthorityStatuses } from "./types";
 
 const optionalMoney = z.preprocess(
   (value) => value === "" || value === undefined || value === null ? undefined : Number(value),
@@ -101,3 +101,49 @@ export const acquisitionDiligenceInputSchema = z.object({
   }
   if (kinds.size !== value.items.length) context.addIssue({ code: "custom", path: ["items"], message: "Diligence item kinds must be unique." });
 });
+
+const offerTermLimitsSchema = z.object({
+  purchasePriceCents: z.number().int().positive().max(100_000_000_00),
+  assignmentFeeTargetCents: z.number().int().min(1_000_000).max(10_000_000),
+  earnestMoneyCents: z.number().int().nonnegative().max(1_000_000),
+  inspectionPeriodDays: z.number().int().min(1).max(30),
+  closingPeriodDays: z.number().int().min(1).max(60),
+}).strict();
+
+export const offerAuthorizationInputSchema = z.object({
+  caseId: z.string().uuid(),
+  inquiryId: z.string().uuid(),
+  diligenceReviewId: z.string().uuid(),
+  sourceEvaluationId: z.string().uuid(),
+  buyerMatchRunId: z.string().uuid(),
+  acquisitionDecisionId: z.string().uuid(),
+  decision: z.enum(offerAuthorizationDecisions),
+  authorizerRole: z.enum(offerAuthorizationRoles),
+  rationale: z.string().trim().min(30).max(2_000),
+  validForHours: z.union([z.literal(24), z.literal(48), z.literal(72)]).optional(),
+  terms: offerTermLimitsSchema.optional(),
+  materialFactsReconfirmed: z.literal(true),
+  disclosureReviewed: z.literal(true),
+  internalAuthorizationOnly: z.literal(true),
+  noOfferGenerated: z.literal(true),
+  noOutreachInitiated: z.literal(true),
+}).strict().superRefine((value, context) => {
+  if (value.decision === "AUTHORIZE_INTERNAL_TERMS" && (!value.terms || !value.validForHours)) {
+    context.addIssue({ code: "custom", path: ["terms"], message: "Internal term authorization requires exact terms and a validity period." });
+  }
+  if (value.decision === "DECLINE_AUTHORIZATION" && (value.terms || value.validForHours)) {
+    context.addIssue({ code: "custom", path: ["terms"], message: "A declined authorization must not contain terms or a validity period." });
+  }
+  if (value.terms && value.terms.closingPeriodDays < value.terms.inspectionPeriodDays) {
+    context.addIssue({ code: "custom", path: ["terms", "closingPeriodDays"], message: "Closing period cannot end before the inspection period." });
+  }
+});
+
+export const offerAuthorizationRevocationInputSchema = z.object({
+  caseId: z.string().uuid(),
+  authorizationId: z.string().uuid(),
+  reason: z.string().trim().min(20).max(1_000),
+  internalAuthorizationOnly: z.literal(true),
+  noOfferGenerated: z.literal(true),
+  noOutreachInitiated: z.literal(true),
+}).strict();

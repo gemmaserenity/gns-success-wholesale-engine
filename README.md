@@ -69,6 +69,10 @@ The private Seller Inquiries desk now connects one inbound inquiry to cited zero
 
 An advanced acquisition case now exposes a private 13-part diligence workspace. Every review is immutable, fully sourced, zero-cost, tied to the current evaluation/buyer-demand/advance evidence, and independently assessed again in PostgreSQL as open, blocked, or ready to present for a separate human offer-authorization decision. Readiness does not authorize or generate an offer and does not permit outreach. Apply `202608240002_phase3_acquisition_diligence.sql`; see [`docs/PHASE-3-MILESTONE-2.md`](docs/PHASE-3-MILESTONE-2.md) and [`docs/PHASE-3-MILESTONE-2-COMPLETION.md`](docs/PHASE-3-MILESTONE-2-COMPLETION.md).
 
+## Phase 3 operational milestone 3
+
+The private acquisition workflow now records an expiring, revocable human authorization or decline for bounded internal terms against the exact latest ready diligence evidence. Actor identity is derived from Cloudflare Access and stored as a one-way fingerprint; PostgreSQL independently rechecks evidence linkage, economics, timing, and duplicate-active-authority controls. This milestone still cannot generate a document, create a signature request, send an offer, call a provider, or initiate outreach. Apply `202608240003_phase3_offer_authorization.sql`; see [`docs/PHASE-3-MILESTONE-3.md`](docs/PHASE-3-MILESTONE-3.md).
+
 ## Phase 1 foundation
 
 The repository now contains an operational Arizona trustee-sale screening slice:

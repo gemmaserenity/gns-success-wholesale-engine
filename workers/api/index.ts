@@ -1,7 +1,7 @@
 import { z, ZodError } from "zod";
 import { TrusteeSaleCsvAdapter } from "../../src/adapters/csv/csv-adapter";
-import { acquisitionDecisionInputSchema, acquisitionDiligenceInputSchema, acquisitionResearchInputSchema } from "../../src/domain/acquisition/schema";
-import { assessAcquisitionDiligence, buildSellerAcquisitionLead, evaluateAcquisitionDecisionGate, evaluateDiligenceEntryGate } from "../../src/domain/acquisition/workflow";
+import { acquisitionDecisionInputSchema, acquisitionDiligenceInputSchema, acquisitionResearchInputSchema, offerAuthorizationInputSchema, offerAuthorizationRevocationInputSchema } from "../../src/domain/acquisition/schema";
+import { assessAcquisitionDiligence, buildSellerAcquisitionLead, evaluateAcquisitionDecisionGate, evaluateDiligenceEntryGate, evaluateOfferAuthorizationGate } from "../../src/domain/acquisition/workflow";
 import { buyerProfileInputSchema } from "../../src/domain/buyers/schema";
 import {
   analyzeBuyerDemand,
@@ -27,7 +27,7 @@ import { normalizeApn, normalizeCounty } from "../../src/domain/opportunities/no
 import { counties, pipelineStates } from "../../src/domain/opportunities/types";
 import type { County, PipelineState } from "../../src/domain/opportunities/types";
 import { evaluateOpportunity } from "../../src/services/evaluate-opportunity";
-import { getAcquisitionCase, getAcquisitionDiligence, persistAcquisitionCase, persistAcquisitionDiligence, recordAcquisitionDecision } from "../../src/services/acquisition-repository";
+import { getAcquisitionCase, getAcquisitionDiligence, getOfferAuthorization, persistAcquisitionCase, persistAcquisitionDiligence, persistOfferAuthorization, recordAcquisitionDecision, revokeOfferAuthorization } from "../../src/services/acquisition-repository";
 import { listBuyers, persistBuyerProfile } from "../../src/services/buyer-repository";
 import { getBuyerMatchStatus, persistBuyerMatchRun } from "../../src/services/buyer-match-repository";
 import {
@@ -123,6 +123,12 @@ function isSellerQualificationTier(value: string): value is SellerQualificationT
 async function sha256Hex(value: string): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function accessActorFingerprint(request: Request, env: Env): Promise<string | undefined> {
+  if (env.ENVIRONMENT !== "production") return sha256Hex("local-operator");
+  const email = request.headers.get("Cf-Access-Authenticated-User-Email")?.trim().toLowerCase();
+  return email ? sha256Hex(email) : undefined;
 }
 
 async function handleApi(request: Request, env: Env): Promise<Response> {
@@ -254,6 +260,57 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
       return json({ diligence, gate, offerAuthorized: false, offerGenerated: false, outreachInitiated: false }, 201);
     } catch (error) {
       if (error instanceof SupabaseFeatureUnavailableError) return json({ error: "Apply the Phase 3 milestone 2 diligence migration before recording a review." }, 409);
+      throw error;
+    }
+  }
+  if (url.pathname === "/api/seller/inquiries/offer-authorization" && request.method === "GET") {
+    const config = supabaseConfig(env);
+    if (!config) return json({ authorization: null, persistence: false });
+    const caseId = z.string().uuid().parse(url.searchParams.get("caseId"));
+    try {
+      return json({
+        authorization: await getOfferAuthorization(config, caseId) ?? null,
+        persistence: true,
+        offerAuthorizationAvailable: true,
+        offerGenerationAvailable: false,
+        documentGenerationAvailable: false,
+        offerSendingAvailable: false,
+        outreachAvailable: false,
+      });
+    } catch (error) {
+      if (error instanceof SupabaseFeatureUnavailableError) return json({ authorization: null, persistence: true, offerAuthorizationAvailable: false }, 409);
+      throw error;
+    }
+  }
+  if (url.pathname === "/api/seller/inquiries/offer-authorization" && request.method === "POST") {
+    const config = supabaseConfig(env);
+    if (!config) return json({ error: "Supabase persistence is required for offer authorization." }, 503);
+    const input = offerAuthorizationInputSchema.parse(JSON.parse(await parseBoundedText(request, 32_768)));
+    const authorizerFingerprint = await accessActorFingerprint(request, env);
+    if (!authorizerFingerprint) return json({ error: "A verified Cloudflare Access identity is required for offer authorization." }, 403);
+    try {
+      const [status, diligence] = await Promise.all([getAcquisitionCase(config, input.inquiryId), getAcquisitionDiligence(config, input.caseId)]);
+      if (!status || status.caseId !== input.caseId) return json({ error: "Acquisition case was not found." }, 404);
+      const gate = evaluateOfferAuthorizationGate(status, diligence, input);
+      if (!gate.allowed) return json({ error: `Offer authorization was denied: ${gate.reasonCodes.join(", ")}.`, gate }, 422);
+      const authorization = await persistOfferAuthorization(config, crypto.randomUUID(), input, gate, authorizerFingerprint, new Date().toISOString());
+      return json({ authorization, gate, offerGenerated: false, documentGenerated: false, offerSent: false, outreachInitiated: false }, 201);
+    } catch (error) {
+      if (error instanceof SupabaseFeatureUnavailableError) return json({ error: "Apply the Phase 3 milestone 3 offer-authorization migration before recording a decision." }, 409);
+      throw error;
+    }
+  }
+  if (url.pathname === "/api/seller/inquiries/offer-authorization/revoke" && request.method === "POST") {
+    const config = supabaseConfig(env);
+    if (!config) return json({ error: "Supabase persistence is required for offer-authorization revocation." }, 503);
+    const input = offerAuthorizationRevocationInputSchema.parse(JSON.parse(await parseBoundedText(request, 16_384)));
+    const actorFingerprint = await accessActorFingerprint(request, env);
+    if (!actorFingerprint) return json({ error: "A verified Cloudflare Access identity is required for offer-authorization revocation." }, 403);
+    try {
+      const authorization = await revokeOfferAuthorization(config, crypto.randomUUID(), input, actorFingerprint, new Date().toISOString());
+      return json({ authorization, offerGenerated: false, documentGenerated: false, offerSent: false, outreachInitiated: false }, 201);
+    } catch (error) {
+      if (error instanceof SupabaseFeatureUnavailableError) return json({ error: "Apply the Phase 3 milestone 3 offer-authorization migration before revoking authorization." }, 409);
       throw error;
     }
   }

@@ -230,3 +230,25 @@ Deploy only the authenticated Worker. The public seller Worker, its assets, bind
 8. The unauthenticated private hostname still reaches Cloudflare Access, and the unchanged public seller health endpoint remains healthy.
 
 Do not create a production diligence review merely to test deployment. A schema-presence GET with a synthetic UUID is sufficient when no approved test case exists.
+
+## Phase 3 internal offer-authorization milestone 3 deployment
+
+After the milestone 2 migration is registered, apply:
+
+```text
+supabase/migrations/202608240003_phase3_offer_authorization.sql
+```
+
+Deploy only the authenticated Worker. The public seller Worker remains unchanged. Then verify:
+
+1. The authorization and revocation tables plus `current_seller_offer_authorizations` exist; service-role update/delete remain revoked.
+2. An authenticated synthetic GET reports `offerAuthorizationAvailable: true` and generation, document generation, sending, and outreach as unavailable.
+3. Production POST requests require a Cloudflare Access authenticated-email header, which the Worker hashes before persistence; the browser supplies no actor identifier.
+4. Authorization is denied unless the latest diligence is ready and all linked evaluation, buyer, decision, and diligence identifiers are current.
+5. Authorized purchase price plus assignment target remains within the base investor ceiling; purchase price also remains within the target-fee contract ceiling.
+6. Validity is limited to 24, 48, or 72 hours; the database rejects more than 72 hours and the current projection reports expiry/staleness automatically.
+7. A second active authorization on the same review is denied until the current record expires or is append-only revoked.
+8. Confirm no offer/document/signature/delivery/provider/outreach route or binding was introduced.
+9. Confirm Cloudflare Access still protects the private hostname and the unchanged public seller health endpoint remains healthy.
+
+Do not create an authorization in production merely to test deployment. Use schema inspection, a synthetic read, and the gated UI unless an approved synthetic case already exists.

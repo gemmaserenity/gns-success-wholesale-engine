@@ -1,7 +1,7 @@
 import type { SellerInquiry } from "../seller-intake/types";
 import type { RawLeadInput } from "../opportunities/types";
 import { diligenceItemKinds } from "./types";
-import type { AcquisitionCaseStatus, AcquisitionDecisionGate, AcquisitionDecisionInput, AcquisitionDiligenceAssessment, AcquisitionDiligenceInput, AcquisitionResearchInput, DiligenceItemKind } from "./types";
+import type { AcquisitionCaseStatus, AcquisitionDecisionGate, AcquisitionDecisionInput, AcquisitionDiligenceAssessment, AcquisitionDiligenceInput, AcquisitionDiligenceStatus, AcquisitionResearchInput, DiligenceItemKind, OfferAuthorizationGate, OfferAuthorizationInput } from "./types";
 
 export function buildSellerAcquisitionLead(inquiry: SellerInquiry, research: AcquisitionResearchInput): RawLeadInput {
   return {
@@ -93,4 +93,42 @@ export function evaluateDiligenceEntryGate(status: AcquisitionCaseStatus, input:
   if (!input.noOfferGenerated) reasonCodes.push("NO_OFFER_BOUNDARY_REQUIRED");
   if (!input.noOutreachInitiated) reasonCodes.push("NO_OUTREACH_BOUNDARY_REQUIRED");
   return { allowed: reasonCodes.length === 0, reasonCodes: reasonCodes.length ? reasonCodes : ["DILIGENCE_REVIEW_ALLOWED"] };
+}
+
+export function evaluateOfferAuthorizationGate(
+  status: AcquisitionCaseStatus,
+  diligence: AcquisitionDiligenceStatus | undefined,
+  input: OfferAuthorizationInput,
+): OfferAuthorizationGate {
+  const reasonCodes: string[] = [];
+  const maximumPurchasePriceCents = Math.round(status.evaluation.baseUnderwriting.maximumContractForTargetFee * 100);
+  if (status.caseId !== input.caseId || status.inquiryId !== input.inquiryId) reasonCodes.push("CASE_MISMATCH");
+  if (status.evaluation.evaluationId !== input.sourceEvaluationId) reasonCodes.push("STALE_EVALUATION");
+  if (!status.buyerDemand || status.buyerDemand.runId !== input.buyerMatchRunId) reasonCodes.push("CURRENT_BUYER_DEMAND_REQUIRED");
+  if (!status.decision || status.decision.decisionId !== input.acquisitionDecisionId || status.decision.decision !== "ADVANCE_TO_ACQUISITION_REVIEW") {
+    reasonCodes.push("CURRENT_ADVANCE_DECISION_REQUIRED");
+  }
+  if (!diligence || diligence.reviewId !== input.diligenceReviewId || diligence.readiness !== "READY_FOR_HUMAN_OFFER_AUTHORIZATION") {
+    reasonCodes.push("CURRENT_READY_DILIGENCE_REQUIRED");
+  } else {
+    if (diligence.caseId !== status.caseId) reasonCodes.push("DILIGENCE_CASE_MISMATCH");
+    if (diligence.sourceEvaluationId !== status.evaluation.evaluationId) reasonCodes.push("DILIGENCE_EVALUATION_STALE");
+    if (diligence.buyerMatchRunId !== status.buyerDemand?.runId) reasonCodes.push("DILIGENCE_BUYER_EVIDENCE_STALE");
+    if (diligence.acquisitionDecisionId !== status.decision?.decisionId) reasonCodes.push("DILIGENCE_DECISION_STALE");
+  }
+  if (!input.internalAuthorizationOnly) reasonCodes.push("INTERNAL_AUTHORIZATION_BOUNDARY_REQUIRED");
+  if (!input.noOfferGenerated) reasonCodes.push("NO_OFFER_GENERATION_BOUNDARY_REQUIRED");
+  if (!input.noOutreachInitiated) reasonCodes.push("NO_OUTREACH_BOUNDARY_REQUIRED");
+  if (input.decision === "AUTHORIZE_INTERNAL_TERMS" && input.terms) {
+    if (input.terms.purchasePriceCents + input.terms.assignmentFeeTargetCents > Math.round(status.evaluation.baseUnderwriting.investorPurchaseCeiling * 100)) {
+      reasonCodes.push("INVESTOR_CEILING_EXCEEDED");
+    }
+    if (input.terms.purchasePriceCents > maximumPurchasePriceCents) reasonCodes.push("PURCHASE_PRICE_EXCEEDS_TARGET_FEE_CEILING");
+    if (input.terms.earnestMoneyCents > input.terms.purchasePriceCents) reasonCodes.push("EARNEST_MONEY_EXCEEDS_PURCHASE_PRICE");
+  }
+  return {
+    allowed: reasonCodes.length === 0,
+    reasonCodes: reasonCodes.length ? reasonCodes : [input.decision === "AUTHORIZE_INTERNAL_TERMS" ? "INTERNAL_TERMS_READY_FOR_AUTHORIZATION" : "AUTHORIZATION_DECLINE_READY"],
+    maximumPurchasePriceCents,
+  };
 }

@@ -11,6 +11,9 @@ export const diligenceItemKinds = [
 ] as const;
 export const diligenceItemStatuses = ["SATISFIED", "OPEN", "BLOCKED", "NOT_APPLICABLE"] as const;
 export const diligenceReadinessStatuses = ["NEEDS_RESEARCH", "BLOCKED", "READY_FOR_HUMAN_OFFER_AUTHORIZATION"] as const;
+export const offerAuthorizationDecisions = ["AUTHORIZE_INTERNAL_TERMS", "DECLINE_AUTHORIZATION"] as const;
+export const offerAuthorizationRoles = ["ACQUISITIONS_MANAGER", "PRINCIPAL"] as const;
+export const offerAuthorizationStatuses = ["AUTHORIZED", "DECLINED", "REVOKED", "EXPIRED", "STALE"] as const;
 
 export type OwnerIdentityStatus = typeof ownerIdentityStatuses[number];
 export type SellerAuthorityStatus = typeof sellerAuthorityStatuses[number];
@@ -18,6 +21,9 @@ export type AcquisitionDecision = typeof acquisitionDecisions[number];
 export type DiligenceItemKind = typeof diligenceItemKinds[number];
 export type DiligenceItemStatus = typeof diligenceItemStatuses[number];
 export type DiligenceReadinessStatus = typeof diligenceReadinessStatuses[number];
+export type OfferAuthorizationDecision = typeof offerAuthorizationDecisions[number];
+export type OfferAuthorizationRole = typeof offerAuthorizationRoles[number];
+export type OfferAuthorizationStatus = typeof offerAuthorizationStatuses[number];
 
 export interface AcquisitionResearchInput {
   inquiryId: string;
@@ -113,6 +119,65 @@ export interface AcquisitionDiligenceStatus extends AcquisitionDiligenceAssessme
   materialFactsCurrent: boolean;
   reviewedAt: string;
   items: AcquisitionDiligenceItemInput[];
+}
+
+export interface OfferTermLimits {
+  purchasePriceCents: number;
+  assignmentFeeTargetCents: number;
+  earnestMoneyCents: number;
+  inspectionPeriodDays: number;
+  closingPeriodDays: number;
+}
+
+export interface OfferAuthorizationInput {
+  caseId: string;
+  inquiryId: string;
+  diligenceReviewId: string;
+  sourceEvaluationId: string;
+  buyerMatchRunId: string;
+  acquisitionDecisionId: string;
+  decision: OfferAuthorizationDecision;
+  authorizerRole: OfferAuthorizationRole;
+  rationale: string;
+  validForHours?: 24 | 48 | 72 | undefined;
+  terms?: OfferTermLimits | undefined;
+  materialFactsReconfirmed: true;
+  disclosureReviewed: true;
+  internalAuthorizationOnly: true;
+  noOfferGenerated: true;
+  noOutreachInitiated: true;
+}
+
+export interface OfferAuthorizationGate extends AcquisitionDecisionGate {
+  maximumPurchasePriceCents?: number | undefined;
+}
+
+export interface OfferAuthorizationStatusRecord {
+  authorizationId: string;
+  caseId: string;
+  diligenceReviewId: string;
+  sourceEvaluationId: string;
+  buyerMatchRunId: string;
+  acquisitionDecisionId: string;
+  decision: OfferAuthorizationDecision;
+  effectiveStatus: OfferAuthorizationStatus;
+  authorizerFingerprint: string;
+  authorizerRole: OfferAuthorizationRole;
+  rationale: string;
+  terms?: OfferTermLimits | undefined;
+  authorizedAt: string;
+  expiresAt?: string | undefined;
+  revokedAt?: string | undefined;
+  revocationReason?: string | undefined;
+}
+
+export interface OfferAuthorizationRevocationInput {
+  caseId: string;
+  authorizationId: string;
+  reason: string;
+  internalAuthorizationOnly: true;
+  noOfferGenerated: true;
+  noOutreachInitiated: true;
 }
 
 export interface AcquisitionCaseStatus {

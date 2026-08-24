@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { acquisitionDecisions, diligenceItemKinds, diligenceItemStatuses, diligenceReadinessStatuses, ownerIdentityStatuses, sellerAuthorityStatuses } from "../domain/acquisition/types";
-import type { AcquisitionCaseCommand, AcquisitionCaseStatus, AcquisitionDecisionGate, AcquisitionDecisionInput, AcquisitionDiligenceAssessment, AcquisitionDiligenceInput, AcquisitionDiligenceStatus } from "../domain/acquisition/types";
+import { acquisitionDecisions, diligenceItemKinds, diligenceItemStatuses, diligenceReadinessStatuses, offerAuthorizationDecisions, offerAuthorizationRoles, offerAuthorizationStatuses, ownerIdentityStatuses, sellerAuthorityStatuses } from "../domain/acquisition/types";
+import type { AcquisitionCaseCommand, AcquisitionCaseStatus, AcquisitionDecisionGate, AcquisitionDecisionInput, AcquisitionDiligenceAssessment, AcquisitionDiligenceInput, AcquisitionDiligenceStatus, OfferAuthorizationGate, OfferAuthorizationInput, OfferAuthorizationRevocationInput, OfferAuthorizationStatusRecord } from "../domain/acquisition/types";
 import { isModernSupabaseSecretKey, SupabaseFeatureUnavailableError, type SupabaseConfig } from "./supabase-repository";
 
 const scenarioSchema = z.object({
@@ -48,6 +48,20 @@ const diligenceRowSchema = z.object({
   reason_codes: z.array(z.string()), open_item_kinds: z.array(z.enum(diligenceItemKinds)),
   blocked_item_kinds: z.array(z.enum(diligenceItemKinds)), summary: z.string(), material_facts_current: z.boolean(),
   reviewed_at: z.string().datetime({ offset: true }), items: z.array(diligenceItemRowSchema),
+});
+
+const offerTermsRowSchema = z.object({
+  purchasePriceCents: z.number().int().positive(), assignmentFeeTargetCents: z.number().int().positive(),
+  earnestMoneyCents: z.number().int().nonnegative(), inspectionPeriodDays: z.number().int().positive(), closingPeriodDays: z.number().int().positive(),
+});
+
+const offerAuthorizationRowSchema = z.object({
+  authorization_id: z.string().uuid(), case_id: z.string().uuid(), diligence_review_id: z.string().uuid(),
+  source_evaluation_id: z.string().uuid(), buyer_match_run_id: z.string().uuid(), acquisition_decision_id: z.string().uuid(),
+  decision: z.enum(offerAuthorizationDecisions), effective_status: z.enum(offerAuthorizationStatuses),
+  authorizer_fingerprint: z.string().regex(/^[a-f0-9]{64}$/), authorizer_role: z.enum(offerAuthorizationRoles), rationale: z.string(),
+  terms: offerTermsRowSchema.nullable(), authorized_at: z.string().datetime({ offset: true }), expires_at: z.string().datetime({ offset: true }).nullable(),
+  revoked_at: z.string().datetime({ offset: true }).nullable(), revocation_reason: z.string().nullable(),
 });
 
 function headers(config: SupabaseConfig): HeadersInit {
@@ -153,5 +167,63 @@ export async function persistAcquisitionDiligence(
   await readJson(response, "acquisition-diligence persistence");
   const status = await getAcquisitionDiligence(config, input.caseId);
   if (!status) throw new Error("Persisted acquisition-diligence review was not found");
+  return status;
+}
+
+function mapOfferAuthorizationRow(row: z.infer<typeof offerAuthorizationRowSchema>): OfferAuthorizationStatusRecord {
+  return {
+    authorizationId: row.authorization_id, caseId: row.case_id, diligenceReviewId: row.diligence_review_id,
+    sourceEvaluationId: row.source_evaluation_id, buyerMatchRunId: row.buyer_match_run_id,
+    acquisitionDecisionId: row.acquisition_decision_id, decision: row.decision, effectiveStatus: row.effective_status,
+    authorizerFingerprint: row.authorizer_fingerprint, authorizerRole: row.authorizer_role, rationale: row.rationale,
+    ...(row.terms ? { terms: row.terms } : {}), authorizedAt: row.authorized_at,
+    ...(row.expires_at ? { expiresAt: row.expires_at } : {}), ...(row.revoked_at ? { revokedAt: row.revoked_at } : {}),
+    ...(row.revocation_reason ? { revocationReason: row.revocation_reason } : {}),
+  };
+}
+
+export async function getOfferAuthorization(config: SupabaseConfig, caseId: string): Promise<OfferAuthorizationStatusRecord | undefined> {
+  const params = new URLSearchParams({
+    select: "authorization_id,case_id,diligence_review_id,source_evaluation_id,buyer_match_run_id,acquisition_decision_id,decision,effective_status,authorizer_fingerprint,authorizer_role,rationale,terms,authorized_at,expires_at,revoked_at,revocation_reason",
+    case_id: `eq.${caseId}`, limit: "1",
+  });
+  const response = await fetch(`${config.url}/rest/v1/current_seller_offer_authorizations?${params}`, { headers: headers(config) });
+  const rows = z.array(offerAuthorizationRowSchema).parse(await readJson(response, "seller offer-authorization lookup"));
+  return rows[0] ? mapOfferAuthorizationRow(rows[0]) : undefined;
+}
+
+export async function persistOfferAuthorization(
+  config: SupabaseConfig,
+  authorizationId: string,
+  input: OfferAuthorizationInput,
+  gate: OfferAuthorizationGate,
+  authorizerFingerprint: string,
+  authorizedAt: string,
+): Promise<OfferAuthorizationStatusRecord> {
+  const expiresAt = input.validForHours ? new Date(new Date(authorizedAt).getTime() + input.validForHours * 3_600_000).toISOString() : undefined;
+  const response = await fetch(`${config.url}/rest/v1/rpc/record_seller_offer_authorization`, {
+    method: "POST", headers: headers(config),
+    body: JSON.stringify({ p_authorization: { authorizationId, ...input, gateReasonCodes: gate.reasonCodes, authorizerFingerprint, authorizedAt, expiresAt } }),
+  });
+  await readJson(response, "seller offer-authorization persistence");
+  const status = await getOfferAuthorization(config, input.caseId);
+  if (!status) throw new Error("Persisted seller offer authorization was not found");
+  return status;
+}
+
+export async function revokeOfferAuthorization(
+  config: SupabaseConfig,
+  revocationId: string,
+  input: OfferAuthorizationRevocationInput,
+  actorFingerprint: string,
+  revokedAt: string,
+): Promise<OfferAuthorizationStatusRecord> {
+  const response = await fetch(`${config.url}/rest/v1/rpc/revoke_seller_offer_authorization`, {
+    method: "POST", headers: headers(config),
+    body: JSON.stringify({ p_revocation: { revocationId, ...input, actorFingerprint, revokedAt } }),
+  });
+  await readJson(response, "seller offer-authorization revocation");
+  const status = await getOfferAuthorization(config, input.caseId);
+  if (!status) throw new Error("Revoked seller offer authorization was not found");
   return status;
 }

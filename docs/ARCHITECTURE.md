@@ -56,6 +56,8 @@ Phase 3 milestone 1 connects an inbound inquiry to the existing opportunity engi
 
 Phase 3 milestone 2 adds an immutable diligence ledger after an advance decision. The private Worker requires the advance decision, evaluation, and buyer-demand run to remain mutually current, then records exactly one status and provenance envelope for each of 13 acquisition checks. The deterministic `acquisition-diligence-v1` assessment distinguishes open research from blockers and can report readiness for a later human offer-authorization step. PostgreSQL independently recomputes the assessment before inserting the review and items. Readiness is not authorization: no offer endpoint, document generator, provider transmission, or outreach action is introduced.
 
+Phase 3 milestone 3 records the next human control without crossing into offer production. A verified Cloudflare Access identity is reduced to a SHA-256 fingerprint inside the private Worker; the browser cannot supply or override it. A role-attested acquisitions manager or principal may authorize bounded internal terms or decline against the exact latest ready diligence snapshot. Purchase price, assignment target, earnest money, inspection/closing periods, and a 24/48/72-hour validity period are constrained by the current base underwriting. PostgreSQL independently rechecks evidence linkage and economics. Authorizations, declines, and revocations are append-only, and the current projection becomes stale or expired automatically. No document, signature, delivery, provider, or outreach component exists.
+
 ### GitHub
 
 GitHub is the canonical source repository and deployment history.

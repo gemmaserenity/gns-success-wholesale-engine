@@ -593,6 +593,9 @@ function renderDiligenceWorkspace(acquisitionCase, diligence) {
       <label class="diligence-notes">Evidence and remaining questions<textarea name="itemNotes" required minlength="10" maxlength="2000" rows="2">${escapeHtml(item?.notes || "")}</textarea></label>
     </fieldset>`;
   }).join("");
+  const authorizationWorkspace = diligence?.readiness === "READY_FOR_HUMAN_OFFER_AUTHORIZATION"
+    ? `<section class="offer-authorization-workspace" data-case-id="${escapeHtml(acquisitionCase.caseId)}"><p class="loading">Loading internal authorization…</p></section>`
+    : '<div class="empty compact">Internal term authorization remains unavailable until the latest diligence review is ready.</div>';
   return `<div class="acquisition-boundary"><strong>Readiness only.</strong> This review records existing zero-cost evidence and blockers. It cannot authorize or generate an offer and cannot initiate outreach.</div>${prior}
     <form class="acquisition-diligence-form guarded-form" data-case-id="${escapeHtml(acquisitionCase.caseId)}" data-inquiry-id="${escapeHtml(acquisitionCase.inquiryId)}" data-evaluation-id="${escapeHtml(acquisitionCase.evaluation.evaluationId)}" data-buyer-run-id="${escapeHtml(acquisitionCase.buyerDemand.runId)}" data-decision-id="${escapeHtml(acquisitionCase.decision.decisionId)}">
       <div class="section-heading compact-heading"><h4>Material-fact diligence</h4><p>Complete every item with current evidence. Required items cannot be marked not applicable.</p></div>
@@ -602,7 +605,64 @@ function renderDiligenceWorkspace(acquisitionCase, diligence) {
       <label class="check-row"><input name="noOfferGenerated" type="checkbox" required> I understand this review does not authorize or generate an offer.</label>
       <label class="check-row"><input name="noOutreachInitiated" type="checkbox" required> I understand this review does not contact the seller or any buyer.</label>
       <button class="primary" type="submit">Record immutable diligence review</button><div class="diligence-feedback" aria-live="polite"></div>
-    </form>`;
+    </form>${authorizationWorkspace}`;
+}
+
+function offerAuthorizationPayload(form, decision, terms) {
+  const data = Object.fromEntries(new FormData(form));
+  return {
+    caseId: form.dataset.caseId, inquiryId: form.dataset.inquiryId, diligenceReviewId: form.dataset.diligenceId,
+    sourceEvaluationId: form.dataset.evaluationId, buyerMatchRunId: form.dataset.buyerRunId,
+    acquisitionDecisionId: form.dataset.decisionId, decision, authorizerRole: data.authorizerRole,
+    rationale: data.rationale, ...(terms ? { validForHours: Number(data.validForHours), terms } : {}),
+    materialFactsReconfirmed: data.materialFactsReconfirmed === "on", disclosureReviewed: data.disclosureReviewed === "on",
+    internalAuthorizationOnly: data.internalAuthorizationOnly === "on", noOfferGenerated: data.noOfferGenerated === "on",
+    noOutreachInitiated: data.noOutreachInitiated === "on",
+  };
+}
+
+function renderOfferAuthorizationWorkspace(acquisitionCase, diligence, authorization) {
+  const commonData = `data-case-id="${escapeHtml(acquisitionCase.caseId)}" data-inquiry-id="${escapeHtml(acquisitionCase.inquiryId)}" data-diligence-id="${escapeHtml(diligence.reviewId)}" data-evaluation-id="${escapeHtml(acquisitionCase.evaluation.evaluationId)}" data-buyer-run-id="${escapeHtml(acquisitionCase.buyerDemand.runId)}" data-decision-id="${escapeHtml(acquisitionCase.decision.decisionId)}"`;
+  const latest = authorization ? `<div class="offer-authorization-status status-${authorization.effectiveStatus.toLowerCase()}"><p class="eyebrow">LATEST APPEND-ONLY AUTHORIZATION</p><strong>${escapeHtml(authorization.effectiveStatus)}</strong><p>${escapeHtml(authorization.rationale)}</p><small>${escapeHtml(authorization.authorizerRole.replaceAll("_", " "))} · actor ${escapeHtml(authorization.authorizerFingerprint.slice(0, 12))}… · ${escapeHtml(new Date(authorization.authorizedAt).toLocaleString())}${authorization.expiresAt ? ` · expires ${escapeHtml(new Date(authorization.expiresAt).toLocaleString())}` : ""}</small>${authorization.terms ? `<div class="acquisition-summary"><div><span>Purchase ceiling</span><strong>${money.format(authorization.terms.purchasePriceCents / 100)}</strong></div><div><span>Assignment target</span><strong>${money.format(authorization.terms.assignmentFeeTargetCents / 100)}</strong></div><div><span>Earnest money</span><strong>${money.format(authorization.terms.earnestMoneyCents / 100)}</strong></div><div><span>Inspection / close</span><strong>${authorization.terms.inspectionPeriodDays} / ${authorization.terms.closingPeriodDays} days</strong></div></div>` : ""}</div>` : "";
+  if (authorization?.effectiveStatus === "AUTHORIZED") {
+    return `<div class="acquisition-boundary"><strong>Internal authority only.</strong> No offer or document exists, nothing can be sent, and no outreach is permitted.</div>${latest}
+      <form class="offer-authorization-revocation-form guarded-form" data-case-id="${escapeHtml(acquisitionCase.caseId)}" data-authorization-id="${escapeHtml(authorization.authorizationId)}">
+        <label>Revocation reason<textarea name="reason" required minlength="20" maxlength="1000" rows="3"></textarea></label>
+        <label class="check-row"><input name="internalAuthorizationOnly" type="checkbox" required> Revoke only the internal authorization.</label>
+        <label class="check-row"><input name="noOfferGenerated" type="checkbox" required> I confirm no offer or document was generated.</label>
+        <label class="check-row"><input name="noOutreachInitiated" type="checkbox" required> I confirm no outreach was initiated.</label>
+        <button class="secondary" type="submit">Append revocation</button><div class="offer-authorization-feedback" aria-live="polite"></div>
+      </form>`;
+  }
+  const maximumPurchase = acquisitionCase.evaluation.baseUnderwriting.maximumContractForTargetFee;
+  const controls = `<label class="check-row"><input name="materialFactsReconfirmed" type="checkbox" required> I reconfirmed the material facts in the current diligence review.</label>
+    <label class="check-row"><input name="disclosureReviewed" type="checkbox" required> I reviewed the applicable wholesale disclosure requirement.</label>
+    <label class="check-row"><input name="internalAuthorizationOnly" type="checkbox" required> I understand this is internal authority only.</label>
+    <label class="check-row"><input name="noOfferGenerated" type="checkbox" required> I confirm this action does not generate an offer or document.</label>
+    <label class="check-row"><input name="noOutreachInitiated" type="checkbox" required> I confirm this action does not contact a seller or buyer.</label>`;
+  return `<div class="acquisition-boundary"><strong>Authorization stops before generation.</strong> A human may approve bounded internal terms or decline. The system still cannot create, sign, send, or communicate an offer.</div>${latest}
+    <div class="offer-authorization-grid">
+      <form class="offer-authorization-form guarded-form" ${commonData}>
+        <h4>Authorize bounded internal terms</h4><p class="buyer-detail">Current purchase-price ceiling: <strong>${money.format(maximumPurchase)}</strong>. Purchase price plus assignment fee must also remain within the investor ceiling.</p>
+        <div class="seller-ai-form-grid"><label>Authorizer role<select name="authorizerRole"><option value="ACQUISITIONS_MANAGER">Acquisitions manager</option><option value="PRINCIPAL">Principal</option></select></label><label>Valid for<select name="validForHours"><option value="24">24 hours</option><option value="48">48 hours</option><option value="72">72 hours</option></select></label>
+          <label>Maximum purchase price<input name="purchasePrice" type="number" min="1" max="${maximumPurchase}" step="0.01" required></label><label>Assignment-fee target<input name="assignmentFeeTarget" type="number" min="10000" max="100000" step="0.01" required></label><label>Earnest money<input name="earnestMoney" type="number" min="0" max="10000" step="0.01" required></label><label>Inspection period days<input name="inspectionPeriodDays" type="number" min="1" max="30" required></label><label>Closing period days<input name="closingPeriodDays" type="number" min="1" max="60" required></label><label class="full">Authorization rationale<textarea name="rationale" required minlength="30" maxlength="2000" rows="3"></textarea></label></div>${controls}
+        <button class="primary" type="submit">Record internal authorization</button><div class="offer-authorization-feedback" aria-live="polite"></div>
+      </form>
+      <form class="offer-authorization-decline-form guarded-form" ${commonData}>
+        <h4>Decline authorization</h4><div class="seller-ai-form-grid"><label>Authorizer role<select name="authorizerRole"><option value="ACQUISITIONS_MANAGER">Acquisitions manager</option><option value="PRINCIPAL">Principal</option></select></label><label class="full">Decline rationale<textarea name="rationale" required minlength="30" maxlength="2000" rows="3"></textarea></label></div>${controls}
+        <button class="secondary" type="submit">Record decline</button><div class="offer-authorization-feedback" aria-live="polite"></div>
+      </form>
+    </div>`;
+}
+
+async function loadOfferAuthorizationWorkspace(workspace, acquisitionCase, diligence, message = "") {
+  workspace.innerHTML = '<p class="loading">Loading internal authorization…</p>';
+  try {
+    const params = new URLSearchParams({ caseId: acquisitionCase.caseId });
+    const body = await send(`/api/seller/inquiries/offer-authorization?${params}`, {});
+    if (body.offerAuthorizationAvailable === false) workspace.innerHTML = '<div class="empty">Apply the Phase 3 milestone 3 offer-authorization migration before recording a decision.</div>';
+    else workspace.innerHTML = `${message ? `<div class="success-message">${escapeHtml(message)}</div>` : ""}${renderOfferAuthorizationWorkspace(acquisitionCase, diligence, body.authorization)}`;
+  } catch (error) { workspace.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`; }
 }
 
 async function loadDiligenceWorkspace(workspace, acquisitionCase, message = "") {
@@ -611,7 +671,11 @@ async function loadDiligenceWorkspace(workspace, acquisitionCase, message = "") 
     const params = new URLSearchParams({ caseId: acquisitionCase.caseId });
     const body = await send(`/api/seller/inquiries/acquisition-diligence?${params}`, {});
     if (body.acquisitionDiligenceAvailable === false) workspace.innerHTML = '<div class="empty">Apply the Phase 3 milestone 2 diligence migration before recording a review.</div>';
-    else workspace.innerHTML = `${message ? `<div class="success-message">${escapeHtml(message)}</div>` : ""}${renderDiligenceWorkspace(acquisitionCase, body.diligence)}`;
+    else {
+      workspace.innerHTML = `${message ? `<div class="success-message">${escapeHtml(message)}</div>` : ""}${renderDiligenceWorkspace(acquisitionCase, body.diligence)}`;
+      const authorizationWorkspace = workspace.querySelector(".offer-authorization-workspace");
+      if (authorizationWorkspace && body.diligence) await loadOfferAuthorizationWorkspace(authorizationWorkspace, acquisitionCase, body.diligence);
+    }
   } catch (error) { workspace.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`; }
 }
 
@@ -710,6 +774,50 @@ $("#seller-inquiry-list").addEventListener("click", async (event) => {
     content.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
     button.disabled = false;
   }
+});
+
+$("#seller-inquiry-list").addEventListener("submit", async (event) => {
+  const form = event.target.closest(".offer-authorization-form");
+  if (!form) return;
+  event.preventDefault();
+  const button = event.submitter; const feedback = form.querySelector(".offer-authorization-feedback");
+  button.disabled = true; feedback.innerHTML = "";
+  try {
+    const data = Object.fromEntries(new FormData(form));
+    const terms = { purchasePriceCents: Math.round(Number(data.purchasePrice) * 100), assignmentFeeTargetCents: Math.round(Number(data.assignmentFeeTarget) * 100), earnestMoneyCents: Math.round(Number(data.earnestMoney) * 100), inspectionPeriodDays: Number(data.inspectionPeriodDays), closingPeriodDays: Number(data.closingPeriodDays) };
+    const body = await send("/api/seller/inquiries/offer-authorization", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(offerAuthorizationPayload(form, "AUTHORIZE_INTERNAL_TERMS", terms)) });
+    const workspace = form.closest(".offer-authorization-workspace");
+    const acquisitionWorkspace = form.closest(".seller-acquisition-workspace");
+    const caseBody = await send(`/api/seller/inquiries/acquisition-case?${new URLSearchParams({ inquiryId: form.dataset.inquiryId })}`, {});
+    const diligenceBody = await send(`/api/seller/inquiries/acquisition-diligence?${new URLSearchParams({ caseId: form.dataset.caseId })}`, {});
+    await loadOfferAuthorizationWorkspace(workspace, caseBody.acquisitionCase, diligenceBody.diligence, `${body.authorization.effectiveStatus} recorded. No offer or document was generated or sent.`);
+    acquisitionWorkspace.querySelector(".acquisition-toggle").setAttribute("aria-expanded", "true");
+  } catch (error) { feedback.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`; button.disabled = false; }
+});
+
+$("#seller-inquiry-list").addEventListener("submit", async (event) => {
+  const form = event.target.closest(".offer-authorization-decline-form");
+  if (!form) return;
+  event.preventDefault();
+  const button = event.submitter; const feedback = form.querySelector(".offer-authorization-feedback");
+  button.disabled = true; feedback.innerHTML = "";
+  try {
+    const body = await send("/api/seller/inquiries/offer-authorization", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(offerAuthorizationPayload(form, "DECLINE_AUTHORIZATION")) });
+    await loadAcquisitionWorkspace(form.closest(".seller-acquisition-workspace"), `${body.authorization.effectiveStatus} recorded. No terms, offer, document, or outreach were created.`);
+  } catch (error) { feedback.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`; button.disabled = false; }
+});
+
+$("#seller-inquiry-list").addEventListener("submit", async (event) => {
+  const form = event.target.closest(".offer-authorization-revocation-form");
+  if (!form) return;
+  event.preventDefault();
+  const button = event.submitter; const feedback = form.querySelector(".offer-authorization-feedback");
+  button.disabled = true; feedback.innerHTML = "";
+  try {
+    const data = Object.fromEntries(new FormData(form));
+    const body = await send("/api/seller/inquiries/offer-authorization/revoke", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseId: form.dataset.caseId, authorizationId: form.dataset.authorizationId, reason: data.reason, internalAuthorizationOnly: data.internalAuthorizationOnly === "on", noOfferGenerated: data.noOfferGenerated === "on", noOutreachInitiated: data.noOutreachInitiated === "on" }) });
+    await loadAcquisitionWorkspace(form.closest(".seller-acquisition-workspace"), `${body.authorization.effectiveStatus} recorded. Internal authority was revoked without generating or sending an offer.`);
+  } catch (error) { feedback.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`; button.disabled = false; }
 });
 
 $("#seller-inquiry-list").addEventListener("submit", async (event) => {
