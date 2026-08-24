@@ -71,7 +71,7 @@ An advanced acquisition case now exposes a private 13-part diligence workspace. 
 
 ## Phase 3 operational milestone 3
 
-The private acquisition workflow now records an expiring, revocable human authorization or decline for bounded internal terms against the exact latest ready diligence evidence. Actor identity is derived from Cloudflare Access and stored as a one-way fingerprint; PostgreSQL independently rechecks evidence linkage, economics, timing, and duplicate-active-authority controls. This milestone still cannot generate a document, create a signature request, send an offer, call a provider, or initiate outreach. Apply `202608240003_phase3_offer_authorization.sql`; see [`docs/PHASE-3-MILESTONE-3.md`](docs/PHASE-3-MILESTONE-3.md).
+The private acquisition workflow now records an expiring, revocable human authorization or decline for bounded internal terms against the exact latest ready diligence evidence. Actor identity is derived from Cloudflare Access and stored as a one-way fingerprint; PostgreSQL independently rechecks evidence linkage, economics, timing, and duplicate-active-authority controls. This milestone still cannot generate a document, create a signature request, send an offer, call a provider, or initiate outreach. Apply `202608240003_phase3_offer_authorization.sql`; see [`docs/PHASE-3-MILESTONE-3.md`](docs/PHASE-3-MILESTONE-3.md) and the [`completion note`](docs/PHASE-3-MILESTONE-3-COMPLETION.md).
 
 ## Phase 1 foundation
 
