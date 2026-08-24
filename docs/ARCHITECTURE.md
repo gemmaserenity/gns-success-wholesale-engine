@@ -64,6 +64,8 @@ Phase 3 milestone 5 adds provider-neutral seller-document governance. Centrally 
 
 Phase 3 milestone 6 adds a PII-minimized system integrity projection and centrally administered emergency hold. PostgreSQL triggers block release-package preparation, final release decisions, signature events, and delivery events while the newest hold event is active. The integrity model reports hold state, separation-of-duties violations, invalid downstream evidence, retention review, and minimized counts. The private Worker exposes read-only health only; the public Worker and all provider boundaries remain unchanged.
 
+Phase 3 milestone 7 closes the phase with a canonical PII-minimized evidence manifest and database SHA-256. A separately administered activation ledger requires independent reviewers, the exact manifest hash, legal/retention/provider evidence, healthy integrity, approved legal versions, current permissions, and no hold. Signature and delivery tables receive an additional database activation trigger. The deployed Worker exposes only the closed manifest and has no activation mutation or seller-facing capability.
+
 ### GitHub
 
 GitHub is the canonical source repository and deployment history.

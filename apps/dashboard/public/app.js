@@ -783,7 +783,18 @@ async function loadDocumentGovernanceIntegrity() {
     }
     const item = body.integrity; const counts = item.counts;
     target.innerHTML = `<div class="acquisition-boundary"><strong>Document governance: ${escapeHtml(item.status)}</strong> · ${escapeHtml(item.reasonCodes.join(" · ").replaceAll("_", " "))}<div class="acquisition-summary"><div><span>Central hold</span><strong>${item.centralHoldActive ? "ACTIVE" : "CLEAR"}</strong></div><div><span>Approved legal versions</span><strong>${counts.approvedContractVersions + counts.approvedDisclosureVersions}</strong></div><div><span>Active permissions</span><strong>${counts.activePermissions}</strong></div><div><span>Release / signature / delivery</span><strong>${counts.releasePackages} / ${counts.signatureEvents} / ${counts.deliveryEvents}</strong></div><div><span>Integrity violations</span><strong>${counts.separationViolations + counts.invalidSignatureEvents + counts.invalidDeliveryEvents}</strong></div><div><span>Retention review overdue</span><strong>${counts.retentionOverdue}</strong></div></div><small>${escapeHtml(item.modelVersion)} · ${escapeHtml(new Date(item.assessedAt).toLocaleString())}. Read-only monitoring; generation, signature, delivery, providers, and outreach remain unavailable.</small></div>`;
+    await loadPhase3Closure(target);
   } catch (error) { target.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`; }
+}
+
+async function loadPhase3Closure(target) {
+  const body = await send("/api/seller/inquiries/phase3-closure", {});
+  if (body.phase3ClosureAvailable === false) {
+    target.insertAdjacentHTML("beforeend", '<div class="empty">Apply the final Phase 3 closure migration.</div>');
+    return;
+  }
+  const closure = body.closure;
+  target.insertAdjacentHTML("beforeend", `<div class="offer-draft-preview"><p class="eyebrow">PHASE 3 FINAL EVIDENCE MANIFEST</p><h4>${escapeHtml(closure.phaseStatus.replaceAll("_", " "))}</h4><p>Canonical PII-minimized governance evidence is bound to SHA-256 <code>${escapeHtml(closure.manifestSha256)}</code>.</p><div class="acquisition-summary"><div><span>Activation decision</span><strong>${escapeHtml(closure.manifest.activationDecision.replaceAll("_", " "))}</strong></div><div><span>Activation available</span><strong>NO</strong></div><div><span>Generation</span><strong>UNAVAILABLE</strong></div><div><span>Signature / delivery</span><strong>UNAVAILABLE</strong></div></div><small>${escapeHtml(closure.manifest.manifestVersion)} · Any future activation requires independent administration, exact legal evidence, retention policy, provider authorization, a healthy integrity manifest, and a separately authorized implementation.</small></div>`);
 }
 
 $("#refresh-sellers").addEventListener("click", () => loadSellerInquiries());

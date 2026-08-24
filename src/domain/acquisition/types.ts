@@ -301,6 +301,33 @@ export interface DocumentGovernanceIntegrityStatus {
   outreachAvailable: false;
 }
 
+export interface Phase3ClosureStatus {
+  manifest: {
+    manifestVersion: "phase3-governance-evidence-v1";
+    phase: "PHASE_3";
+    integrityModelVersion: "seller-document-governance-integrity-v1";
+    integrityStatus: "HEALTHY" | "HOLD" | "VIOLATION";
+    centralHoldActive: boolean;
+    reasonCodes: string[];
+    counts: DocumentGovernanceIntegrityStatus["counts"];
+    activationDecision: "CLOSED_BY_DEFAULT" | "OPEN" | "CLOSE";
+    activationEventId?: string | null | undefined;
+    sellerFacingGenerationAvailable: false;
+    signatureRequestAvailable: false;
+    deliveryAvailable: false;
+    providerConfigured: false;
+    outreachAvailable: false;
+  };
+  manifestSha256: string;
+  phaseStatus: "COMPLETE_RELEASE_CLOSED" | "ACTIVATION_PREREQUISITES_RECORDED";
+  activationAvailable: false;
+  sellerFacingGenerationAvailable: false;
+  signatureRequestAvailable: false;
+  deliveryAvailable: false;
+  providerConfigured: false;
+  outreachAvailable: false;
+}
+
 export interface AcquisitionCaseStatus {
   caseId: string;
   inquiryId: string;

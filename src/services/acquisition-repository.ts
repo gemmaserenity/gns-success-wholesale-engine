@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { acquisitionDecisions, diligenceItemKinds, diligenceItemStatuses, diligenceReadinessStatuses, documentReleaseStatuses, offerAuthorizationDecisions, offerAuthorizationRoles, offerAuthorizationStatuses, offerDraftStatuses, offerDraftTemplateVersions, ownerIdentityStatuses, sellerAuthorityStatuses } from "../domain/acquisition/types";
-import type { AcquisitionCaseCommand, AcquisitionCaseStatus, AcquisitionDecisionGate, AcquisitionDecisionInput, AcquisitionDiligenceAssessment, AcquisitionDiligenceInput, AcquisitionDiligenceStatus, DocumentGovernanceIntegrityStatus, DocumentReleaseGovernanceStatus, OfferAuthorizationGate, OfferAuthorizationInput, OfferAuthorizationRevocationInput, OfferAuthorizationStatusRecord, OfferDraftGate, OfferDraftInput, OfferDraftStatusRecord } from "../domain/acquisition/types";
+import type { AcquisitionCaseCommand, AcquisitionCaseStatus, AcquisitionDecisionGate, AcquisitionDecisionInput, AcquisitionDiligenceAssessment, AcquisitionDiligenceInput, AcquisitionDiligenceStatus, DocumentGovernanceIntegrityStatus, DocumentReleaseGovernanceStatus, OfferAuthorizationGate, OfferAuthorizationInput, OfferAuthorizationRevocationInput, OfferAuthorizationStatusRecord, OfferDraftGate, OfferDraftInput, OfferDraftStatusRecord, Phase3ClosureStatus } from "../domain/acquisition/types";
 import { isModernSupabaseSecretKey, SupabaseFeatureUnavailableError, type SupabaseConfig } from "./supabase-repository";
 
 const scenarioSchema = z.object({
@@ -116,6 +116,22 @@ const documentGovernanceIntegritySchema = z.object({
     invalidDeliveryEvents: z.number().int().nonnegative(), retentionOverdue: z.number().int().nonnegative(),
   }), sellerFacingGenerationAvailable: z.literal(false), signatureRequestAvailable: z.literal(false),
   deliveryAvailable: z.literal(false), providerConfigured: z.literal(false), outreachAvailable: z.literal(false),
+});
+
+const governanceCountsSchema = documentGovernanceIntegritySchema.shape.counts;
+const phase3ClosureSchema = z.object({
+  manifest: z.object({
+    manifestVersion: z.literal("phase3-governance-evidence-v1"), phase: z.literal("PHASE_3"),
+    integrityModelVersion: z.literal("seller-document-governance-integrity-v1"),
+    integrityStatus: z.enum(["HEALTHY", "HOLD", "VIOLATION"]), centralHoldActive: z.boolean(),
+    reasonCodes: z.array(z.string()), counts: governanceCountsSchema,
+    activationDecision: z.enum(["CLOSED_BY_DEFAULT", "OPEN", "CLOSE"]), activationEventId: z.string().uuid().nullable(),
+    sellerFacingGenerationAvailable: z.literal(false), signatureRequestAvailable: z.literal(false), deliveryAvailable: z.literal(false),
+    providerConfigured: z.literal(false), outreachAvailable: z.literal(false),
+  }), manifestSha256: z.string().regex(/^[a-f0-9]{64}$/),
+  phaseStatus: z.enum(["COMPLETE_RELEASE_CLOSED", "ACTIVATION_PREREQUISITES_RECORDED"]), activationAvailable: z.literal(false),
+  sellerFacingGenerationAvailable: z.literal(false), signatureRequestAvailable: z.literal(false), deliveryAvailable: z.literal(false),
+  providerConfigured: z.literal(false), outreachAvailable: z.literal(false),
 });
 
 function headers(config: SupabaseConfig): HeadersInit {
@@ -355,4 +371,12 @@ export async function getDocumentGovernanceIntegrity(config: SupabaseConfig): Pr
     method: "POST", headers: headers(config), body: "{}",
   });
   return documentGovernanceIntegritySchema.parse(await readJson(response, "seller document-governance integrity lookup"));
+}
+
+export async function getPhase3ClosureStatus(config: SupabaseConfig): Promise<Phase3ClosureStatus> {
+  const response = await fetch(`${config.url}/rest/v1/rpc/get_phase3_governance_evidence_manifest`, {
+    method: "POST", headers: headers(config), body: "{}",
+  });
+  const row = phase3ClosureSchema.parse(await readJson(response, "Phase 3 closure manifest lookup"));
+  return row;
 }

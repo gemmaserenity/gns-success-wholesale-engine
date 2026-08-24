@@ -118,4 +118,6 @@ Phase 3 Milestone 5 adds central permission, legal-version, release-decision, si
 
 Phase 3 Milestone 6 adds deterministic document-governance integrity monitoring and a database-enforced central emergency hold.
 
+Phase 3 Milestone 7 closes the phase with a canonical hashed governance manifest and an independently administered activation interlock that remains closed.
+
 For the original screening-engine recap, read [`docs/PHASE-1-SESSION-NOTE.md`](docs/PHASE-1-SESSION-NOTE.md).

@@ -37,6 +37,8 @@ Seller-document release governance requires centrally administered permission ev
 
 Document-governance integrity is independently monitored without duplicating seller identity or contact data. A central append-only hold stops preparation, approval, signature, and delivery at the database layer while leaving revocation available. Separation-of-duties, invalid signature/delivery evidence, and overdue retention review are deterministic violations rather than operator reminders.
 
+Phase closure is cryptographically evidenced rather than inferred from UI state. The activation interlock defaults closed and requires two different administrators plus exact legal, retention, provider, permission, integrity, and hold evidence. The current application cannot create an activation event and still cannot generate, sign, deliver, or contact.
+
 Arizona-specific wholesale transaction requirements should be versioned and configurable.
 
 This documentation is operational guidance and not a substitute for legal advice.

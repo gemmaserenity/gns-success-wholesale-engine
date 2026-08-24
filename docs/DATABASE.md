@@ -110,3 +110,7 @@ The service role can read governance and call only the minimized status function
 ## Phase 3 document-governance integrity
 
 Migration `202608240006_phase3_document_governance_integrity.sql` adds append-only `seller_document_governance_hold_events`, the current-hold projection, database triggers across downstream release phases, and `get_seller_document_governance_integrity()`. The service role can read hold state and integrity but cannot insert, update, or delete hold history. The assessment contains only status, reason codes, counts, timestamps, and false capability flags.
+
+## Phase 3 closure and activation interlock
+
+Migration `202608240007_phase3_closure_activation_interlock.sql` adds append-only `seller_document_activation_events`, a current projection, `get_phase3_governance_evidence_manifest()`, and signature/delivery activation triggers. The manifest is canonical `jsonb` hashed with SHA-256 and contains no seller PII. The service role can read the manifest but cannot insert, update, or delete activation history.

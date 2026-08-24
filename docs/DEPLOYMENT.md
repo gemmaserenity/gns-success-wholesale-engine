@@ -297,3 +297,7 @@ Do not register placeholder legal language or approval evidence. Do not create a
 ## Phase 3 document-governance integrity milestone 6 deployment
 
 Apply `supabase/migrations/202608240006_phase3_document_governance_integrity.sql`, then deploy only the authenticated Worker. Verify the hold table is empty, the integrity RPC reports `HEALTHY` with zero violations, all provider/action flags remain false, the dashboard renders the read-only assessment, and Cloudflare Access/public Worker boundaries are unchanged. Do not create a hold or any release-related event merely to verify deployment.
+
+## Phase 3 final closure milestone 7 deployment
+
+Apply `supabase/migrations/202608240007_phase3_closure_activation_interlock.sql`, then deploy only the authenticated Worker. Verify the activation table is empty, the evidence RPC returns a 64-character SHA-256 and `COMPLETE_RELEASE_CLOSED`, every action/activation flag is false, signature/delivery interlock triggers exist, the dashboard renders the hash, and Access/public Worker boundaries remain unchanged. Do not create an activation or operational event for verification.

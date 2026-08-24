@@ -207,3 +207,13 @@ The latest append-only hold/release event controls a PostgreSQL trigger on prepa
 ### Missing readiness and integrity violations are different
 
 Absent legal approvals and permissions truthfully keep release unavailable but do not imply corrupted history. Separation failures, invalid signature/delivery evidence, overdue retention, or an explicit hold produce deterministic integrity status and reason codes.
+
+## 2026-08-24 — Phase 3 final closure milestone
+
+### Phase completion is release-closed
+
+Completing Phase 3 does not activate seller-facing documents. The canonical evidence manifest proves the current governance posture, and production ends at `COMPLETE_RELEASE_CLOSED`.
+
+### Activation requires new authority and two-person evidence
+
+The Worker cannot open the activation interlock. Any future administrative record must bind the exact manifest hash, two distinct identities, approved legal evidence, retention policy, provider authorization, current permissions, healthy integrity, and no hold. A separate implementation authorization remains necessary afterward.

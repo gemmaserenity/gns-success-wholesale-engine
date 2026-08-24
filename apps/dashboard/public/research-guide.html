@@ -247,6 +247,7 @@
           <tr><td><code>Separation</code></td><td>Release preparer and final decision fingerprints</td><td>The same actor cannot perform both phases.</td><td>A mismatch is a deterministic integrity violation.</td></tr>
           <tr><td><code>Downstream validity</code></td><td>Current release projection plus signature/delivery history</td><td>Every event must belong to a currently approved release.</td><td>Invalid evidence is surfaced without copying seller PII.</td></tr>
           <tr><td><code>Retention</code></td><td>Legal, release, signature, and delivery retention timestamps</td><td>Items at or past retention require review.</td><td>Monitoring does not delete or rewrite history.</td></tr>
+          <tr><td><code>Phase closure</code></td><td>Canonical `phase3-governance-evidence-v1` manifest</td><td>PII-minimized status, counts, action flags, activation state, and PostgreSQL SHA-256.</td><td>Production remains `COMPLETE_RELEASE_CLOSED`; activation requires separate two-person evidence and implementation authority.</td></tr>
         </tbody></table></div>
       </div>
 
