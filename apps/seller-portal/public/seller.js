@@ -48,7 +48,15 @@ form.addEventListener("submit", async (event) => {
     if (mortgageBalance !== undefined) payload.mortgageBalance = mortgageBalance;
 
     const response = await fetch("/api/seller/intake", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-    const body = await response.json();
+    const responseText = await response.text();
+    let body;
+    try {
+      body = JSON.parse(responseText);
+    } catch {
+      throw new Error(response.ok
+        ? "The seller portal received an unexpected response. Please try again."
+        : "Seller intake is temporarily unavailable. Please try again shortly.");
+    }
     if (!response.ok) throw new Error(body.issues?.map((issue) => issue.message).join(" ") || body.error || "We could not submit the form.");
 
     form.closest(".seller-card").classList.add("hidden");

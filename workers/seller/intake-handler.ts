@@ -32,8 +32,7 @@ export function sellerJson(data: unknown, status = 200): Response {
 }
 
 function supabaseConfig(env: SellerPortalEnv): SupabaseConfig | undefined {
-  if (!env.SUPABASE_URL && !env.SUPABASE_SECRET_KEY) return undefined;
-  if (!env.SUPABASE_URL || !env.SUPABASE_SECRET_KEY) throw new Error("Supabase persistence configuration is incomplete");
+  if (!env.SUPABASE_URL || !env.SUPABASE_SECRET_KEY) return undefined;
   return { url: env.SUPABASE_URL, secretKey: env.SUPABASE_SECRET_KEY };
 }
 

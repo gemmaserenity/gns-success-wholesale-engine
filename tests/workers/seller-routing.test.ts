@@ -42,6 +42,21 @@ describe("separate seller portal Worker", () => {
     expect(await response.json()).toEqual({ ok: true, service: "gns-success-seller-portal" });
   });
 
+  it("returns JSON when persistence configuration is incomplete", async () => {
+    const response = await sellerWorker.fetch(
+      sellerRequest("https://sell.gns-success.com/api/seller/intake", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      }),
+      sellerEnvironment(),
+    );
+
+    expect(response.status).toBe(503);
+    expect(response.headers.get("content-type")).toContain("application/json");
+    expect(await response.json()).toEqual({ error: "Seller intake is temporarily unavailable." });
+  });
+
   it("does not expose the public intake route on the wholesale Worker", async () => {
     const response = await wholesaleWorker.fetch(
       wholesaleRequest("https://wholesale.gns-success.com/api/seller/intake"),
