@@ -62,6 +62,8 @@ Phase 3 milestone 4 adds an internal document-preparation boundary without selle
 
 Phase 3 milestone 5 adds provider-neutral seller-document governance. Centrally administered append-only capability events replace self-attested roles for release operations. Separate immutable ledgers hold legal-document versions and approval/rejection/revocation evidence, release-control manifests and final human decisions/revocations, and future signature/delivery evidence. Every manifest begins with the exact current Milestone 4 draft and binds its hash/template version to exact approved Arizona contract and wholesale-disclosure versions, revalidation hashes, consent/suppression controls, retention, and idempotency. Because no approved legal artifacts were supplied, no artifact is seeded and the private Worker exposes read-only blockers only; seller-facing generation, signature, delivery, providers, and outreach remain unavailable. The public Worker is unchanged.
 
+Phase 3 milestone 6 adds a PII-minimized system integrity projection and centrally administered emergency hold. PostgreSQL triggers block release-package preparation, final release decisions, signature events, and delivery events while the newest hold event is active. The integrity model reports hold state, separation-of-duties violations, invalid downstream evidence, retention review, and minimized counts. The private Worker exposes read-only health only; the public Worker and all provider boundaries remain unchanged.
+
 ### GitHub
 
 GitHub is the canonical source repository and deployment history.

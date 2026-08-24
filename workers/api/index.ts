@@ -27,7 +27,7 @@ import { normalizeApn, normalizeCounty } from "../../src/domain/opportunities/no
 import { counties, pipelineStates } from "../../src/domain/opportunities/types";
 import type { County, PipelineState } from "../../src/domain/opportunities/types";
 import { evaluateOpportunity } from "../../src/services/evaluate-opportunity";
-import { getAcquisitionCase, getAcquisitionDiligence, getDocumentReleaseGovernance, getOfferAuthorization, getOfferDraft, persistAcquisitionCase, persistAcquisitionDiligence, persistOfferAuthorization, persistOfferDraft, recordAcquisitionDecision, revokeOfferAuthorization } from "../../src/services/acquisition-repository";
+import { getAcquisitionCase, getAcquisitionDiligence, getDocumentGovernanceIntegrity, getDocumentReleaseGovernance, getOfferAuthorization, getOfferDraft, persistAcquisitionCase, persistAcquisitionDiligence, persistOfferAuthorization, persistOfferDraft, recordAcquisitionDecision, revokeOfferAuthorization } from "../../src/services/acquisition-repository";
 import { listBuyers, persistBuyerProfile } from "../../src/services/buyer-repository";
 import { getBuyerMatchStatus, persistBuyerMatchRun } from "../../src/services/buyer-match-repository";
 import {
@@ -371,6 +371,16 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
         governance: null, persistence: true, documentReleaseGovernanceAvailable: false,
         sellerFacingGenerationAvailable: false, signatureRequestAvailable: false, deliveryAvailable: false, outreachAvailable: false,
       }, 409);
+      throw error;
+    }
+  }
+  if (url.pathname === "/api/seller/inquiries/document-governance-integrity" && request.method === "GET") {
+    const config = supabaseConfig(env);
+    if (!config) return json({ integrity: null, persistence: false });
+    if (!await accessActorFingerprint(request, env)) return json({ error: "A verified Cloudflare Access identity is required for document-governance integrity." }, 403);
+    try { return json({ integrity: await getDocumentGovernanceIntegrity(config) }); }
+    catch (error) {
+      if (error instanceof SupabaseFeatureUnavailableError) return json({ integrity: null, persistence: true, documentGovernanceIntegrityAvailable: false }, 409);
       throw error;
     }
   }

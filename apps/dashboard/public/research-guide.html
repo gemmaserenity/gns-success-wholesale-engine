@@ -241,6 +241,16 @@
       </div>
 
       <div class="mapping-block">
+        <h4>Document governance integrity and emergency hold</h4>
+        <div class="table-wrap"><table class="field-table"><thead><tr><th>Signal</th><th>Source</th><th>Interpretation</th><th>Control</th></tr></thead><tbody>
+          <tr><td><code>Central hold</code></td><td>Newest append-only hold/release event</td><td>Emergency stop administered outside the browser.</td><td>PostgreSQL blocks preparation, approval, signature, and delivery; revocation remains available.</td></tr>
+          <tr><td><code>Separation</code></td><td>Release preparer and final decision fingerprints</td><td>The same actor cannot perform both phases.</td><td>A mismatch is a deterministic integrity violation.</td></tr>
+          <tr><td><code>Downstream validity</code></td><td>Current release projection plus signature/delivery history</td><td>Every event must belong to a currently approved release.</td><td>Invalid evidence is surfaced without copying seller PII.</td></tr>
+          <tr><td><code>Retention</code></td><td>Legal, release, signature, and delivery retention timestamps</td><td>Items at or past retention require review.</td><td>Monitoring does not delete or rewrite history.</td></tr>
+        </tbody></table></div>
+      </div>
+
+      <div class="mapping-block">
         <h4>Buyer database — source is the buyer relationship, not property records</h4>
         <div class="table-wrap"><table class="field-table"><thead><tr><th>Buyer field</th><th>Find it here</th><th>Map exactly this</th><th>Do not</th></tr></thead><tbody>
           <tr><td><code>Buyer name / Company</code></td><td>Direct buyer intake, verified relationship, business records</td><td>Recognizable buyer name and acquisition entity.</td><td>Do not create a buyer from an unverified list alone.</td></tr>

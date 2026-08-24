@@ -276,6 +276,31 @@ export interface DocumentReleaseGovernanceStatus {
   outreachAvailable: false;
 }
 
+export interface DocumentGovernanceIntegrityStatus {
+  modelVersion: "seller-document-governance-integrity-v1";
+  assessedAt: string;
+  status: "HEALTHY" | "HOLD" | "VIOLATION";
+  reasonCodes: string[];
+  centralHoldActive: boolean;
+  counts: {
+    approvedContractVersions: number;
+    approvedDisclosureVersions: number;
+    activePermissions: number;
+    releasePackages: number;
+    signatureEvents: number;
+    deliveryEvents: number;
+    separationViolations: number;
+    invalidSignatureEvents: number;
+    invalidDeliveryEvents: number;
+    retentionOverdue: number;
+  };
+  sellerFacingGenerationAvailable: false;
+  signatureRequestAvailable: false;
+  deliveryAvailable: false;
+  providerConfigured: false;
+  outreachAvailable: false;
+}
+
 export interface AcquisitionCaseStatus {
   caseId: string;
   inquiryId: string;

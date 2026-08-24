@@ -766,9 +766,24 @@ async function loadSellerInquiries(message = "") {
       return;
     }
     list.innerHTML = `${message ? `<div class="success-message">${escapeHtml(message)}</div>` : ""}${body.inquiries.length ? body.inquiries.map(renderSellerInquiry).join("") : '<div class="empty">No seller inquiries match these filters.</div>'}`;
+    await loadDocumentGovernanceIntegrity();
   } catch (error) {
     list.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
   }
+}
+
+async function loadDocumentGovernanceIntegrity() {
+  const target = $("#document-governance-integrity");
+  target.innerHTML = '<p class="loading">Checking document governance…</p>';
+  try {
+    const body = await send("/api/seller/inquiries/document-governance-integrity", {});
+    if (body.documentGovernanceIntegrityAvailable === false) {
+      target.innerHTML = '<div class="empty">Apply the Milestone 6 governance-integrity migration.</div>';
+      return;
+    }
+    const item = body.integrity; const counts = item.counts;
+    target.innerHTML = `<div class="acquisition-boundary"><strong>Document governance: ${escapeHtml(item.status)}</strong> · ${escapeHtml(item.reasonCodes.join(" · ").replaceAll("_", " "))}<div class="acquisition-summary"><div><span>Central hold</span><strong>${item.centralHoldActive ? "ACTIVE" : "CLEAR"}</strong></div><div><span>Approved legal versions</span><strong>${counts.approvedContractVersions + counts.approvedDisclosureVersions}</strong></div><div><span>Active permissions</span><strong>${counts.activePermissions}</strong></div><div><span>Release / signature / delivery</span><strong>${counts.releasePackages} / ${counts.signatureEvents} / ${counts.deliveryEvents}</strong></div><div><span>Integrity violations</span><strong>${counts.separationViolations + counts.invalidSignatureEvents + counts.invalidDeliveryEvents}</strong></div><div><span>Retention review overdue</span><strong>${counts.retentionOverdue}</strong></div></div><small>${escapeHtml(item.modelVersion)} · ${escapeHtml(new Date(item.assessedAt).toLocaleString())}. Read-only monitoring; generation, signature, delivery, providers, and outreach remain unavailable.</small></div>`;
+  } catch (error) { target.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`; }
 }
 
 $("#refresh-sellers").addEventListener("click", () => loadSellerInquiries());

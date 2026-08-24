@@ -49,6 +49,7 @@ After revenue validates the model, evaluate:
 - [x] third operational milestone: expiring internal term authorization → append-only decline/revocation → no document generation, sending, or outreach
 - [x] fourth operational milestone: server-assembled immutable internal offer-terms draft → version/hash provenance → no seller-facing approval, signature, delivery, or outreach
 - [x] fifth operational milestone: controlled release governance → central permissions and legal-version evidence ledgers → seller-facing generation, signature, delivery, providers, and outreach remain unavailable until approvals exist
+- [x] sixth operational milestone: document-governance integrity monitoring → central emergency hold → deterministic separation, release-validity, and retention checks
 
 - premium property-data providers
 - premium AVM/comparable-sales data

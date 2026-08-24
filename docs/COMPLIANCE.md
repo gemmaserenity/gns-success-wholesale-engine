@@ -35,6 +35,8 @@ An internal offer-terms draft remains an operational control record, not a selle
 
 Seller-document release governance requires centrally administered permission evidence; browser role attestation is insufficient. Legal versions must carry exact hashes, approval evidence, jurisdiction, validity, and retention before they can satisfy a gate. Release controls bind the exact current internal-draft hash, authorization, seller/property/term revalidation, channel consent, and suppression standing. Preparation, final human approval/rejection/revocation, signature history, and delivery history are separate append-only records. No approved legal artifact is inferred or seeded, and the current Worker cannot generate, sign, deliver, contact, or call a provider.
 
+Document-governance integrity is independently monitored without duplicating seller identity or contact data. A central append-only hold stops preparation, approval, signature, and delivery at the database layer while leaving revocation available. Separation-of-duties, invalid signature/delivery evidence, and overdue retention review are deterministic violations rather than operator reminders.
+
 Arizona-specific wholesale transaction requirements should be versioned and configurable.
 
 This documentation is operational guidance and not a substitute for legal advice.

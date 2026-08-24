@@ -293,3 +293,7 @@ Deploy only the authenticated Worker. Do not deploy the public seller Worker. Th
 6. Confirm the public seller Worker deployment and health endpoint are unchanged.
 
 Do not register placeholder legal language or approval evidence. Do not create a release package, signature request, delivery, or outreach event for deployment verification.
+
+## Phase 3 document-governance integrity milestone 6 deployment
+
+Apply `supabase/migrations/202608240006_phase3_document_governance_integrity.sql`, then deploy only the authenticated Worker. Verify the hold table is empty, the integrity RPC reports `HEALTHY` with zero violations, all provider/action flags remain false, the dashboard renders the read-only assessment, and Cloudflare Access/public Worker boundaries are unchanged. Do not create a hold or any release-related event merely to verify deployment.

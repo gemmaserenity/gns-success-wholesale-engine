@@ -106,3 +106,7 @@ Migration `202608240004_phase3_internal_offer_drafts.sql` creates append-only `s
 Migration `202608240005_phase3_document_release_governance.sql` adds `seller_document_permission_events`, `seller_legal_document_versions`, `seller_legal_document_approval_events`, `seller_document_release_packages`, `seller_document_release_decisions`, `seller_document_release_revocations`, `seller_document_signature_events`, and `seller_document_delivery_events`. Current views project administered permissions, legal approval state, and release state.
 
 The service role can read governance and call only the minimized status function; it cannot insert central permissions, legal approvals, signature events, or delivery events and cannot update/delete any history. Release packages reserve exact draft/template/legal-version hashes, seller/property/terms hashes, consent/suppression revalidation, retention, provenance, and idempotency. No legal or provider rows are seeded.
+
+## Phase 3 document-governance integrity
+
+Migration `202608240006_phase3_document_governance_integrity.sql` adds append-only `seller_document_governance_hold_events`, the current-hold projection, database triggers across downstream release phases, and `get_seller_document_governance_integrity()`. The service role can read hold state and integrity but cannot insert, update, or delete hold history. The assessment contains only status, reason codes, counts, timestamps, and false capability flags.

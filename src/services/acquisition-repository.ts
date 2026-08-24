@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { acquisitionDecisions, diligenceItemKinds, diligenceItemStatuses, diligenceReadinessStatuses, documentReleaseStatuses, offerAuthorizationDecisions, offerAuthorizationRoles, offerAuthorizationStatuses, offerDraftStatuses, offerDraftTemplateVersions, ownerIdentityStatuses, sellerAuthorityStatuses } from "../domain/acquisition/types";
-import type { AcquisitionCaseCommand, AcquisitionCaseStatus, AcquisitionDecisionGate, AcquisitionDecisionInput, AcquisitionDiligenceAssessment, AcquisitionDiligenceInput, AcquisitionDiligenceStatus, DocumentReleaseGovernanceStatus, OfferAuthorizationGate, OfferAuthorizationInput, OfferAuthorizationRevocationInput, OfferAuthorizationStatusRecord, OfferDraftGate, OfferDraftInput, OfferDraftStatusRecord } from "../domain/acquisition/types";
+import type { AcquisitionCaseCommand, AcquisitionCaseStatus, AcquisitionDecisionGate, AcquisitionDecisionInput, AcquisitionDiligenceAssessment, AcquisitionDiligenceInput, AcquisitionDiligenceStatus, DocumentGovernanceIntegrityStatus, DocumentReleaseGovernanceStatus, OfferAuthorizationGate, OfferAuthorizationInput, OfferAuthorizationRevocationInput, OfferAuthorizationStatusRecord, OfferDraftGate, OfferDraftInput, OfferDraftStatusRecord } from "../domain/acquisition/types";
 import { isModernSupabaseSecretKey, SupabaseFeatureUnavailableError, type SupabaseConfig } from "./supabase-repository";
 
 const scenarioSchema = z.object({
@@ -103,6 +103,19 @@ const documentReleaseGovernanceSchema = z.object({
   permissions: z.object({ prepare: z.boolean(), approve: z.boolean(), revoke: z.boolean() }),
   release: documentReleaseRowSchema.nullable(), sellerFacingGenerationAvailable: z.literal(false),
   signatureRequestAvailable: z.literal(false), deliveryAvailable: z.literal(false), providerConfigured: z.literal(false), outreachAvailable: z.literal(false).optional(),
+});
+
+const documentGovernanceIntegritySchema = z.object({
+  modelVersion: z.literal("seller-document-governance-integrity-v1"), assessedAt: z.string().datetime({ offset: true }),
+  status: z.enum(["HEALTHY", "HOLD", "VIOLATION"]), reasonCodes: z.array(z.string()), centralHoldActive: z.boolean(),
+  counts: z.object({
+    approvedContractVersions: z.number().int().nonnegative(), approvedDisclosureVersions: z.number().int().nonnegative(),
+    activePermissions: z.number().int().nonnegative(), releasePackages: z.number().int().nonnegative(),
+    signatureEvents: z.number().int().nonnegative(), deliveryEvents: z.number().int().nonnegative(),
+    separationViolations: z.number().int().nonnegative(), invalidSignatureEvents: z.number().int().nonnegative(),
+    invalidDeliveryEvents: z.number().int().nonnegative(), retentionOverdue: z.number().int().nonnegative(),
+  }), sellerFacingGenerationAvailable: z.literal(false), signatureRequestAvailable: z.literal(false),
+  deliveryAvailable: z.literal(false), providerConfigured: z.literal(false), outreachAvailable: z.literal(false),
 });
 
 function headers(config: SupabaseConfig): HeadersInit {
@@ -335,4 +348,11 @@ export async function getDocumentReleaseGovernance(
     } } : {}),
     sellerFacingGenerationAvailable: false, signatureRequestAvailable: false, deliveryAvailable: false, providerConfigured: false, outreachAvailable: false,
   };
+}
+
+export async function getDocumentGovernanceIntegrity(config: SupabaseConfig): Promise<DocumentGovernanceIntegrityStatus> {
+  const response = await fetch(`${config.url}/rest/v1/rpc/get_seller_document_governance_integrity`, {
+    method: "POST", headers: headers(config), body: "{}",
+  });
+  return documentGovernanceIntegritySchema.parse(await readJson(response, "seller document-governance integrity lookup"));
 }

@@ -197,3 +197,13 @@ Contract and Arizona wholesale-disclosure versions require exact hashes and appe
 ### Preparation, decision, signature, and delivery are distinct
 
 Release manifests, final human approval/rejection/revocation, signature evidence, and delivery evidence use separate append-only ledgers with provenance, retention, and idempotency. The private Worker exposes read-only governance only and has no provider binding or mutation capability for signature or delivery.
+
+## 2026-08-24 — Phase 3 document-governance integrity milestone
+
+### A central hold is enforced below the application
+
+The latest append-only hold/release event controls a PostgreSQL trigger on preparation, approval, signature, and delivery inserts. The Worker cannot self-administer the hold, and revocation remains possible during an incident.
+
+### Missing readiness and integrity violations are different
+
+Absent legal approvals and permissions truthfully keep release unavailable but do not imply corrupted history. Separation failures, invalid signature/delivery evidence, overdue retention, or an explicit hold produce deterministic integrity status and reason codes.

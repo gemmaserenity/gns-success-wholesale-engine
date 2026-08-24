@@ -116,4 +116,6 @@ Production deployment and secret setup are documented in `docs/DEPLOYMENT.md`.
 
 Phase 3 Milestone 5 adds central permission, legal-version, release-decision, signature-history, and delivery-history governance while keeping seller-facing generation and all provider actions unavailable.
 
+Phase 3 Milestone 6 adds deterministic document-governance integrity monitoring and a database-enforced central emergency hold.
+
 For the original screening-engine recap, read [`docs/PHASE-1-SESSION-NOTE.md`](docs/PHASE-1-SESSION-NOTE.md).
