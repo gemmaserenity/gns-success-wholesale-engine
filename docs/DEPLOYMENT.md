@@ -190,3 +190,22 @@ Deploy the authenticated Worker with `wrangler.jsonc` and the public Worker with
 11. Import a synthetic valid `seller-ai-output-v1` result with provider/model provenance and a human decision. Confirm immutable packet, result, review, and PII-minimized audit records exist while inquiry status, consent, booking, and delivery records remain unchanged.
 
 Do not submit real seller information during deployment testing unless the person has knowingly provided it for this workflow. Use an operator-controlled test address and clearly synthetic property details.
+
+## Phase 3 seller-acquisition milestone 1 deployment
+
+After all Phase 2 migrations are registered, apply:
+
+```text
+supabase/migrations/202608240001_phase3_seller_acquisition_workflow.sql
+```
+
+Deploy only the authenticated Worker; the public seller Worker has no Phase 3 route or asset change. Then verify:
+
+1. An unauthenticated request to `wholesale.gns-success.com` still reaches Cloudflare Access rather than the private API.
+2. `GET /api/seller/inquiries/acquisition-case?inquiryId=<synthetic inquiry UUID>` reports `acquisitionWorkflowAvailable: true` inside an authenticated session.
+3. A cited zero-cost public-record case persists one linked opportunity evaluation, case, verification, and PII-minimized audit event in one transaction.
+4. Paid-provider or non-zero-cost opening research is rejected before persistence.
+5. Buyer-demand analysis persists through the existing `buyer-demand-v1` workflow and creates a revised immutable evaluation.
+6. Advance is denied without matched ownership, verified seller authority, current buyer-demand evidence, and human review attestations.
+7. Advance, hold, or decline adds a decision row without changing the inquiry, consent events, property verification, evaluation, or buyer-match history.
+8. Responses continue to report `externalTransmissionAllowed: false`, `outreachInitiated: false`, and `offerGenerated: false` as applicable.

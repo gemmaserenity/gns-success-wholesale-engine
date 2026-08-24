@@ -346,6 +346,14 @@ label.check .field-caption { gap: 5px; }
 .seller-status-form .secondary { margin: 0; }
 .seller-status-feedback { grid-column: 1/-1; }
 .seller-ai-workspace { margin-top: 14px; padding: 15px; border: 1px solid #d7c7b5; background: #fffdf9; }
+.seller-acquisition-workspace { margin-top: 14px; padding: 15px; border: 1px solid #c9b28f; background: #fffaf2; }
+.seller-acquisition-content { display: grid; gap: 12px; margin-top: 12px; }
+.acquisition-boundary { padding: 11px 13px; border-left: 3px solid var(--orange); background: #f8efe3; color: var(--brown-strong); font-size: 11px; }
+.acquisition-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; border: 1px solid var(--line); background: var(--line); }
+.acquisition-summary > div { padding: 10px 12px; background: #fffdf9; }
+.acquisition-summary span { display: block; color: var(--muted); font-size: 9px; letter-spacing: .06em; text-transform: uppercase; }
+.acquisition-summary strong { display: block; margin-top: 2px; font-size: 12px; }
+.acquisition-feedback { margin-top: 10px; }
 .seller-ai-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
 .seller-ai-heading p, .ai-privacy-note p { margin: 4px 0 0; color: var(--muted); font-size: 11px; }
 .seller-ai-content { display: grid; gap: 12px; margin-top: 12px; }
@@ -379,6 +387,7 @@ label.check .field-caption { gap: 5px; }
   .buyer-controls { grid-template-columns: 1fr 1fr; }
   .seller-controls { grid-template-columns: 1fr 1fr; }
   .seller-inquiry-grid { grid-template-columns: repeat(2,1fr); }
+  .acquisition-summary { grid-template-columns: repeat(2,1fr); }
   body::before { opacity: .18; right: -120px; }
 }
 
@@ -411,6 +420,7 @@ label.check .field-caption { gap: 5px; }
   .seller-controls,
   .seller-inquiry-grid,
   .seller-status-form { grid-template-columns: 1fr; }
+  .acquisition-summary { grid-template-columns: 1fr; }
   label.wide { grid-column: span 1; }
   .metric { border-right: 0; border-bottom: 1px solid var(--line); }
   .target { min-width: 0; }

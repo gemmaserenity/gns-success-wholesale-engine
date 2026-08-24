@@ -139,3 +139,13 @@ The application generates a coded, versioned intake packet that excludes direct 
 ### AI output is evidence support, not operational authority
 
 Only a bounded structured response can be imported. Provider/model provenance and an operator acceptance, rejection, or revision rationale are mandatory. AI assistance cannot modify the seller submission, deterministic qualification, consent, status, booking, or communication evidence and cannot initiate outreach.
+
+## 2026-08-24 — Phase 3 seller-to-acquisition milestone
+
+### Opening research is zero-cost and atomic
+
+The first Phase 3 case accepts only cited public-record or completed human-verified evidence at zero direct cost. The restricted database function persists the verification, normalized property, underwriting evaluation, case linkage, and audit evidence in one transaction so an inquiry cannot be partially connected to an opportunity.
+
+### Advance is a human evidence decision, not an offer
+
+The application permits advance, hold, or decline decisions. Advance requires the latest non-rejected evaluation, verified parcel identity, matched owner, verified seller authority, and a current buyer-demand run. Every decision preserves a rationale and the no-offer boundary. No case action changes consent, initiates outreach, or drafts transaction terms.

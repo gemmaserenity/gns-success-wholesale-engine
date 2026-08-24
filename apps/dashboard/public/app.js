@@ -511,9 +511,77 @@ function renderSellerInquiry(inquiry) {
     <div class="seller-inquiry-header"><div><p class="eyebrow">${escapeHtml(inquiry.qualification.tier)} · ${escapeHtml(inquiry.status.replaceAll("_", " "))}</p><h4>${escapeHtml(inquiry.propertyAddress)}</h4><p>${escapeHtml(inquiry.name)} · ${escapeHtml(inquiry.county.replaceAll("_", " "))} · ${escapeHtml(new Date(inquiry.submittedAt).toLocaleString())}</p></div><div class="score"><strong>${inquiry.qualification.score}</strong><span>/ 100 · INTAKE</span></div></div>
     <div class="seller-inquiry-grid"><div><span>Timeline</span><strong>${escapeHtml(inquiry.timeline.replaceAll("_", " "))}</strong></div><div><span>Situation</span><strong>${escapeHtml(inquiry.motivation.replaceAll("_", " "))}</strong></div><div><span>Condition</span><strong>${escapeHtml(inquiry.condition.replaceAll("_", " "))}</strong></div><div><span>Occupancy</span><strong>${escapeHtml(inquiry.occupancy.replaceAll("_", " "))}</strong></div></div>
     <div class="seller-contact-evidence"><p><strong>Contact:</strong> ${escapeHtml([inquiry.email, inquiry.phone].filter(Boolean).join(" · ") || "None")}</p><p><strong>Authorized channels:</strong> ${escapeHtml(permission.join(" · ") || "None — do not initiate outreach")}</p><p><strong>Relationship:</strong> ${escapeHtml(inquiry.relationship.replaceAll("_", " "))}${inquiry.apn ? ` · <strong>APN:</strong> ${escapeHtml(inquiry.apn)}` : ""}</p><p><strong>Asking / mortgage:</strong> ${inquiry.askingPrice === undefined ? "Not provided" : money.format(inquiry.askingPrice)} / ${inquiry.mortgageBalance === undefined ? "Not provided" : money.format(inquiry.mortgageBalance)}</p>${inquiry.notes ? `<p><strong>Seller notes:</strong> ${escapeHtml(inquiry.notes)}</p>` : ""}<p><strong>Assessment:</strong> ${escapeHtml(inquiry.qualification.summary)}</p><p><strong>Review flags:</strong> ${escapeHtml(inquiry.qualification.reviewFlags.join(" · ") || "None")}</p><p><strong>Delivery:</strong> ${escapeHtml(delivery)}</p>${inquiry.bookingUrl ? `<p><strong>Cal.com:</strong> Booking link offered</p>` : ""}</div>
+    <section class="seller-acquisition-workspace" data-inquiry-id="${escapeHtml(inquiry.id)}"><div class="seller-ai-heading"><div><strong>Acquisition evidence workflow</strong><p>Connect verified public research, underwriting, buyer demand, and a human decision. No provider transmission, outreach, or offer generation.</p></div><button class="secondary acquisition-toggle" type="button" aria-expanded="false">Open workflow</button></div><div class="seller-acquisition-content hidden" aria-live="polite"></div></section>
     <section class="seller-ai-workspace" data-inquiry-id="${escapeHtml(inquiry.id)}"><div class="seller-ai-heading"><div><strong>Human-reviewed AI assistance</strong><p>Prepares coded facts only. Nothing is sent to an AI service, and no outreach or record status can be changed here.</p></div><button class="secondary prepare-ai-packet" type="button">Prepare minimized packet</button></div><div class="seller-ai-content" aria-live="polite"></div></section>
     <form class="seller-status-form" data-inquiry-id="${escapeHtml(inquiry.id)}"><label>Record status<select name="status"><option value="NEW" ${inquiry.status === "NEW" ? "selected" : ""}>New</option><option value="REVIEWING" ${inquiry.status === "REVIEWING" ? "selected" : ""}>Reviewing</option><option value="CONTACTED" ${inquiry.status === "CONTACTED" ? "selected" : ""}>Contacted</option><option value="APPOINTMENT_SET" ${inquiry.status === "APPOINTMENT_SET" ? "selected" : ""}>Appointment set</option><option value="CLOSED" ${inquiry.status === "CLOSED" ? "selected" : ""}>Closed</option></select></label><label class="rationale">Rationale<input name="rationale" required minlength="10" maxlength="1000" placeholder="What changed and what evidence supports it?"></label><button class="secondary" type="submit">Record status</button><div class="seller-status-feedback" aria-live="polite"></div></form>
   </article>`;
+}
+
+function renderAcquisitionCase(inquiryId, acquisitionCase) {
+  if (!acquisitionCase) return `<div class="acquisition-boundary"><strong>Zero-cost evidence only.</strong> Use an official public record or a completed human verification. Seller-reported facts may guide research but are not treated as verified.</div>
+    <form class="acquisition-case-form guarded-form" data-inquiry-id="${escapeHtml(inquiryId)}">
+      <div class="seller-ai-form-grid">
+        <label>Evidence source<input name="sourceName" required minlength="3" maxlength="160" placeholder="Pinal County Assessor"></label>
+        <label>Evidence class<select name="sourceType"><option value="PUBLIC_RECORD">Public record</option><option value="HUMAN_VERIFIED">Human verified</option></select></label>
+        <label class="full">Exact evidence URL<input name="sourceUrl" type="url" required placeholder="https://official-source.example/record"></label>
+        <label>Retrieved at<input name="retrievedAt" type="datetime-local" required value="${new Date().toISOString().slice(0, 16)}"></label>
+        <label>County<select name="county"><option value="MARICOPA">Maricopa</option><option value="PINAL">Pinal</option></select></label>
+        <label>Verified APN<input name="apn" required minlength="3" maxlength="40"></label>
+        <label>Verified property address<input name="address" required minlength="5" maxlength="240"></label>
+        <label>Recorded owner name<input name="ownerName" required minlength="2" maxlength="240"></label>
+        <label>Owner match<select name="ownerIdentityStatus"><option value="MATCHED">Matched</option><option value="UNRESOLVED">Unresolved</option><option value="MISMATCH">Mismatch</option></select></label>
+        <label>Seller authority<select name="sellerAuthorityStatus"><option value="VERIFIED">Verified</option><option value="UNVERIFIED">Unverified</option></select></label>
+        <label>Owner confidence<select name="ownerConfidence"><option value="0.9">High · 90%</option><option value="0.75">Good · 75%</option><option value="0.65">Minimum matched · 65%</option><option value="0.4">Low · 40%</option></select></label>
+        <label>Overall data confidence<select name="dataConfidence"><option value="0.9">High · 90%</option><option value="0.75">Good · 75%</option><option value="0.6">Moderate · 60%</option><option value="0.4">Low · 40%</option></select></label>
+        <label>ARV low<input name="arvLow" type="number" min="0" required></label><label>ARV high<input name="arvHigh" type="number" min="0" required></label>
+        <label>Repairs low<input name="repairsLow" type="number" min="0" required></label><label>Repairs high<input name="repairsHigh" type="number" min="0" required></label>
+        <label>Debt low<input name="debtLow" type="number" min="0" required></label><label>Debt high<input name="debtHigh" type="number" min="0" required></label>
+        <label>Known liens<input name="liens" type="number" min="0"></label><label>Working contract estimate<input name="workingContractPrice" type="number" min="0" placeholder="Underwriting input, not an offer"></label>
+        <label>Trustee-sale date<input name="trusteeSaleDate" type="date"></label><label>Recorded date<input name="recordedDate" type="date"></label>
+        <label>Property type<input name="propertyType" maxlength="80"></label><label>Square feet<input name="squareFeet" type="number" min="1"></label>
+        <label>Year built<input name="yearBuilt" type="number" min="1800" max="2200"></label><label>Occupancy<input name="occupancy" maxlength="80"></label>
+        <label class="full">Verification notes<textarea name="verificationNotes" required minlength="20" maxlength="2000" rows="3" placeholder="Identify the record reviewed, how the parcel and owner were matched, and what remains uncertain."></textarea></label>
+      </div>
+      <label class="check-row"><input name="propertyIdentityVerified" type="checkbox" required> I verified the property identity against the cited evidence.</label>
+      <label class="check-row"><input name="titleComplexity" type="checkbox"> Known title complexity requires further professional review.</label>
+      <button class="primary" type="submit">Persist research and underwriting</button><div class="acquisition-feedback" aria-live="polite"></div>
+    </form>`;
+  const evaluation = acquisitionCase.evaluation;
+  const base = evaluation.baseUnderwriting;
+  const buyer = acquisitionCase.buyerDemand;
+  const decision = acquisitionCase.decision;
+  const buyerPanel = buyer
+    ? `<div class="acquisition-summary"><div><span>Buyer demand</span><strong>${buyer.buyerDemandScore}/100</strong></div><div><span>Probable buyers</span><strong>${buyer.probableBuyerCount}</strong></div><div><span>Possible buyers</span><strong>${buyer.possibleBuyerCount}</strong></div></div>`
+    : evaluation.state === "REJECTED" ? '<div class="empty compact">Rejected underwriting cannot enter buyer-demand analysis.</div>' : '<button class="secondary run-acquisition-buyer-match" type="button">Run buyer-demand analysis</button>';
+  return `<div class="acquisition-boundary"><strong>Decision support only.</strong> This case does not authorize contact, create an offer, or change seller consent.</div>
+    <div class="acquisition-summary"><div><span>Property verification</span><strong>${escapeHtml(acquisitionCase.verification.ownerIdentityStatus.replaceAll("_", " "))}</strong></div><div><span>Authority</span><strong>${escapeHtml(acquisitionCase.verification.sellerAuthorityStatus)}</strong></div><div><span>Opportunity</span><strong>${evaluation.score}/100 · ${escapeHtml(evaluation.state)}</strong></div><div><span>Base assignment</span><strong>${money.format(base.expectedAssignmentFee)}</strong></div></div>
+    <p class="buyer-detail"><strong>Evidence:</strong> ${escapeHtml(acquisitionCase.verification.sourceName)} · ${escapeHtml(acquisitionCase.verification.sourceType.replaceAll("_", " "))} · $0 research cost</p>
+    ${buyerPanel}
+    ${decision ? `<div class="success-message"><strong>Latest human decision:</strong> ${escapeHtml(decision.decision.replaceAll("_", " "))}<br>${escapeHtml(decision.rationale)}</div>` : ""}
+    <form class="acquisition-decision-form guarded-form" data-inquiry-id="${escapeHtml(inquiryId)}" data-case-id="${escapeHtml(acquisitionCase.caseId)}" data-evaluation-id="${escapeHtml(evaluation.evaluationId)}" data-buyer-run-id="${escapeHtml(buyer?.runId || "")}">
+      <div class="seller-ai-form-grid"><label>Human decision<select name="decision"><option value="HOLD_FOR_RESEARCH">Hold for research</option><option value="ADVANCE_TO_ACQUISITION_REVIEW">Advance to acquisition review</option><option value="DECLINE">Decline</option></select></label><label class="full">Decision rationale<textarea name="rationale" required minlength="20" maxlength="2000" rows="3"></textarea></label></div>
+      <label class="check-row"><input name="materialFactsReviewed" type="checkbox"> I reviewed the material property, ownership, underwriting, and buyer-demand evidence.</label>
+      <label class="check-row"><input name="consentBoundaryReviewed" type="checkbox"> I reviewed channel-specific consent; this decision does not create permission.</label>
+      <label class="check-row"><input name="noOfferAuthorized" type="checkbox" required> I understand this decision does not generate or authorize an offer.</label>
+      <button class="primary" type="submit">Record human decision</button><div class="acquisition-feedback" aria-live="polite"></div>
+    </form>`;
+}
+
+async function loadAcquisitionWorkspace(workspace, message = "") {
+  const content = workspace.querySelector(".seller-acquisition-content");
+  const button = workspace.querySelector(".acquisition-toggle");
+  content.classList.remove("hidden");
+  content.innerHTML = '<p class="loading">Loading acquisition evidence…</p>';
+  button.disabled = true;
+  try {
+    const params = new URLSearchParams({ inquiryId: workspace.dataset.inquiryId });
+    const body = await send(`/api/seller/inquiries/acquisition-case?${params}`, {});
+    if (body.acquisitionWorkflowAvailable === false) content.innerHTML = '<div class="empty">Apply the Phase 3 seller-acquisition migration before opening a case.</div>';
+    else content.innerHTML = `${message ? `<div class="success-message">${escapeHtml(message)}</div>` : ""}${renderAcquisitionCase(workspace.dataset.inquiryId, body.acquisitionCase)}`;
+    button.textContent = "Hide workflow";
+    button.setAttribute("aria-expanded", "true");
+  } catch (error) { content.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`; }
+  finally { button.disabled = false; }
 }
 
 async function loadSellerInquiries(message = "") {
@@ -555,6 +623,26 @@ $("#seller-inquiry-list").addEventListener("submit", async (event) => {
   }
 });
 $("#seller-inquiry-list").addEventListener("click", async (event) => {
+  const acquisitionButton = event.target.closest(".acquisition-toggle");
+  if (acquisitionButton) {
+    const workspace = acquisitionButton.closest(".seller-acquisition-workspace");
+    const content = workspace.querySelector(".seller-acquisition-content");
+    if (!content.classList.contains("hidden") && acquisitionButton.getAttribute("aria-expanded") === "true") {
+      content.classList.add("hidden"); acquisitionButton.textContent = "Open workflow"; acquisitionButton.setAttribute("aria-expanded", "false");
+    } else await loadAcquisitionWorkspace(workspace);
+    return;
+  }
+  const buyerButton = event.target.closest(".run-acquisition-buyer-match");
+  if (buyerButton) {
+    const workspace = buyerButton.closest(".seller-acquisition-workspace");
+    const form = workspace.querySelector(".acquisition-decision-form");
+    buyerButton.disabled = true;
+    try {
+      await send("/api/opportunities/buyer-matches", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ evaluationId: form.dataset.evaluationId }) });
+      await loadAcquisitionWorkspace(workspace, "Buyer-demand analysis persisted. No buyer was contacted.");
+    } catch (error) { buyerButton.insertAdjacentHTML("afterend", `<div class="error">${escapeHtml(error.message)}</div>`); buyerButton.disabled = false; }
+    return;
+  }
   const button = event.target.closest(".prepare-ai-packet");
   if (!button) return;
   const workspace = button.closest(".seller-ai-workspace");
@@ -570,6 +658,51 @@ $("#seller-inquiry-list").addEventListener("click", async (event) => {
     content.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
     button.disabled = false;
   }
+});
+
+$("#seller-inquiry-list").addEventListener("submit", async (event) => {
+  const form = event.target.closest(".acquisition-case-form");
+  if (!form) return;
+  event.preventDefault();
+  const button = event.submitter;
+  const feedback = form.querySelector(".acquisition-feedback");
+  button.disabled = true; feedback.innerHTML = "";
+  try {
+    const data = Object.fromEntries(new FormData(form));
+    const body = {
+      inquiryId: form.dataset.inquiryId, sourceName: data.sourceName, sourceType: data.sourceType, sourceUrl: data.sourceUrl,
+      retrievedAt: new Date(data.retrievedAt).toISOString(), county: data.county, apn: data.apn, address: data.address,
+      ownerName: data.ownerName, ownerIdentityStatus: data.ownerIdentityStatus, sellerAuthorityStatus: data.sellerAuthorityStatus,
+      propertyIdentityVerified: data.propertyIdentityVerified === "on", verificationNotes: data.verificationNotes, researchCostCents: 0,
+      trusteeSaleDate: data.trusteeSaleDate || undefined, recordedDate: data.recordedDate || undefined,
+      propertyType: data.propertyType || undefined, squareFeet: optionalNumber(data, "squareFeet"), yearBuilt: optionalNumber(data, "yearBuilt"),
+      occupancy: data.occupancy || undefined, arvLow: Number(data.arvLow), arvHigh: Number(data.arvHigh), repairsLow: Number(data.repairsLow),
+      repairsHigh: Number(data.repairsHigh), debtLow: Number(data.debtLow), debtHigh: Number(data.debtHigh), liens: optionalNumber(data, "liens"),
+      workingContractPrice: optionalNumber(data, "workingContractPrice"), ownerConfidence: Number(data.ownerConfidence), dataConfidence: Number(data.dataConfidence),
+      titleComplexity: data.titleComplexity === "on",
+    };
+    await send("/api/seller/inquiries/acquisition-case", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    await loadAcquisitionWorkspace(form.closest(".seller-acquisition-workspace"), "Property verification and underwriting persisted with immutable provenance.");
+  } catch (error) { feedback.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`; button.disabled = false; }
+});
+
+$("#seller-inquiry-list").addEventListener("submit", async (event) => {
+  const form = event.target.closest(".acquisition-decision-form");
+  if (!form) return;
+  event.preventDefault();
+  const button = event.submitter;
+  const feedback = form.querySelector(".acquisition-feedback");
+  button.disabled = true; feedback.innerHTML = "";
+  try {
+    const data = Object.fromEntries(new FormData(form));
+    const body = await send("/api/seller/inquiries/acquisition-decision", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+      caseId: form.dataset.caseId, inquiryId: form.dataset.inquiryId, sourceEvaluationId: form.dataset.evaluationId,
+      buyerMatchRunId: form.dataset.buyerRunId || undefined, decision: data.decision, rationale: data.rationale,
+      materialFactsReviewed: data.materialFactsReviewed === "on", consentBoundaryReviewed: data.consentBoundaryReviewed === "on",
+      noOfferAuthorized: data.noOfferAuthorized === "on",
+    }) });
+    await loadAcquisitionWorkspace(form.closest(".seller-acquisition-workspace"), `${body.acquisitionCase.decision.decision.replaceAll("_", " ")} recorded. No outreach or offer was generated.`);
+  } catch (error) { feedback.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`; button.disabled = false; }
 });
 
 $("#seller-inquiry-list").addEventListener("submit", async (event) => {

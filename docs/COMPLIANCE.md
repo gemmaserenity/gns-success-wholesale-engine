@@ -25,6 +25,8 @@ Seller qualification is a routing assessment only. The portal states that submis
 
 AI assistance excludes seller identity, contact values, property address, APN, exact financial amounts, and seller-authored notes. The application does not transmit the packet externally. Imported results are advisory, strictly structured, provider/model-attributed, and unusable until an operator records an acceptance, rejection, or revision decision with rationale. AI output cannot create consent, authorize contact, change status, initiate outreach, or constitute an offer, appraisal, title conclusion, or legal advice.
 
+An acquisition-case decision is internal decision support, not permission to contact and not an offer. The first Phase 3 workflow accepts only zero-cost public-record or human-verified research, preserves the exact source and retrieval time, and keeps seller-reported facts distinct from verified facts. Advancing requires a human to review material evidence and the channel-specific consent boundary. Every decision records that no offer is generated or authorized; offer drafting and sending remain unavailable.
+
 Arizona-specific wholesale transaction requirements should be versioned and configurable.
 
 This documentation is operational guidance and not a substitute for legal advice.

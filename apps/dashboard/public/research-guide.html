@@ -178,6 +178,17 @@
       </div>
 
       <div class="mapping-block">
+        <h4>Inbound seller acquisition case — verified evidence replaces reported assumptions</h4>
+        <div class="table-wrap"><table class="field-table"><thead><tr><th>Workflow field</th><th>Evidence used</th><th>Map exactly this</th><th>Control</th></tr></thead><tbody>
+          <tr><td><code>Parcel and owner</code></td><td>Official assessor, recorder, deed, or completed human verification</td><td>County, APN, situs address, recorded owner, exact source URL, and retrieval time.</td><td>Seller-reported identity is a lead, not verification.</td></tr>
+          <tr><td><code>Seller authority</code></td><td>Deed, entity, probate, trust, power-of-attorney, or qualified professional evidence</td><td>Verified or unverified, with concise verification notes.</td><td>Advance is blocked while authority is unverified.</td></tr>
+          <tr><td><code>Underwriting ranges</code></td><td>Cited value, repair, debt, lien, and title evidence</td><td>Low/high ranges, classification, confidence, and known complexity.</td><td>The working contract estimate is an internal model input, not an offer.</td></tr>
+          <tr><td><code>Buyer demand</code></td><td>Current persisted evaluation plus active evidence-based buyer profiles</td><td>Versioned demand score, probable/possible counts, and criterion outcomes.</td><td>No buyer is contacted by analysis.</td></tr>
+          <tr><td><code>Human decision</code></td><td>Latest verification, underwriting, and buyer-demand evidence</td><td>Advance, hold, or decline with rationale and review attestations.</td><td>The decision changes no consent and generates no offer or outreach.</td></tr>
+        </tbody></table></div>
+      </div>
+
+      <div class="mapping-block">
         <h4>Buyer database — source is the buyer relationship, not property records</h4>
         <div class="table-wrap"><table class="field-table"><thead><tr><th>Buyer field</th><th>Find it here</th><th>Map exactly this</th><th>Do not</th></tr></thead><tbody>
           <tr><td><code>Buyer name / Company</code></td><td>Direct buyer intake, verified relationship, business records</td><td>Recognizable buyer name and acquisition entity.</td><td>Do not create a buyer from an unverified list alone.</td></tr>

@@ -1,5 +1,7 @@
 import { z, ZodError } from "zod";
 import { TrusteeSaleCsvAdapter } from "../../src/adapters/csv/csv-adapter";
+import { acquisitionDecisionInputSchema, acquisitionResearchInputSchema } from "../../src/domain/acquisition/schema";
+import { buildSellerAcquisitionLead, evaluateAcquisitionDecisionGate } from "../../src/domain/acquisition/workflow";
 import { buyerProfileInputSchema } from "../../src/domain/buyers/schema";
 import {
   analyzeBuyerDemand,
@@ -25,6 +27,7 @@ import { normalizeApn, normalizeCounty } from "../../src/domain/opportunities/no
 import { counties, pipelineStates } from "../../src/domain/opportunities/types";
 import type { County, PipelineState } from "../../src/domain/opportunities/types";
 import { evaluateOpportunity } from "../../src/services/evaluate-opportunity";
+import { getAcquisitionCase, persistAcquisitionCase, recordAcquisitionDecision } from "../../src/services/acquisition-repository";
 import { listBuyers, persistBuyerProfile } from "../../src/services/buyer-repository";
 import { getBuyerMatchStatus, persistBuyerMatchRun } from "../../src/services/buyer-match-repository";
 import {
@@ -164,6 +167,58 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
       return json({ inquiry: await recordSellerInquiryStatus(config, input, new Date().toISOString()), outreachInitiated: false }, 201);
     } catch (error) {
       if (error instanceof SupabaseFeatureUnavailableError) return json({ error: "Apply the Phase 2 seller-intake migration before updating inquiries." }, 409);
+      throw error;
+    }
+  }
+  if (url.pathname === "/api/seller/inquiries/acquisition-case" && request.method === "GET") {
+    const config = supabaseConfig(env);
+    if (!config) return json({ acquisitionCase: null, persistence: false });
+    const inquiryId = z.string().uuid().parse(url.searchParams.get("inquiryId"));
+    try {
+      return json({
+        acquisitionCase: await getAcquisitionCase(config, inquiryId) ?? null,
+        persistence: true,
+        acquisitionWorkflowAvailable: true,
+        externalTransmissionAllowed: false,
+        outreachAvailable: false,
+        offerGenerationAvailable: false,
+      });
+    } catch (error) {
+      if (error instanceof SupabaseFeatureUnavailableError) return json({ acquisitionCase: null, persistence: true, acquisitionWorkflowAvailable: false });
+      throw error;
+    }
+  }
+  if (url.pathname === "/api/seller/inquiries/acquisition-case" && request.method === "POST") {
+    const config = supabaseConfig(env);
+    if (!config) return json({ error: "Supabase persistence is required for seller acquisition cases." }, 503);
+    const research = acquisitionResearchInputSchema.parse(JSON.parse(await parseBoundedText(request, 32_768)));
+    try {
+      const inquiry = await getSellerInquiry(config, research.inquiryId);
+      const now = new Date();
+      const evaluation = evaluateOpportunity(buildSellerAcquisitionLead(inquiry, research), { now, evaluationId: crypto.randomUUID() });
+      const acquisitionCase = await persistAcquisitionCase(config, {
+        caseId: crypto.randomUUID(), verificationId: crypto.randomUUID(), openedAt: now.toISOString(),
+        inquiry, research, evaluation,
+      });
+      return json({ acquisitionCase, externalTransmissionAllowed: false, outreachInitiated: false, offerGenerated: false }, 201);
+    } catch (error) {
+      if (error instanceof SupabaseFeatureUnavailableError) return json({ error: "Apply the Phase 3 seller-acquisition migration before opening a case." }, 409);
+      throw error;
+    }
+  }
+  if (url.pathname === "/api/seller/inquiries/acquisition-decision" && request.method === "POST") {
+    const config = supabaseConfig(env);
+    if (!config) return json({ error: "Supabase persistence is required for acquisition decisions." }, 503);
+    const input = acquisitionDecisionInputSchema.parse(JSON.parse(await parseBoundedText(request, 16_384)));
+    try {
+      const status = await getAcquisitionCase(config, input.inquiryId);
+      if (!status || status.caseId !== input.caseId) return json({ error: "Acquisition case was not found." }, 404);
+      const gate = evaluateAcquisitionDecisionGate(status, input);
+      if (!gate.allowed) return json({ error: `Acquisition decision was denied: ${gate.reasonCodes.join(", ")}.`, gate }, 422);
+      const acquisitionCase = await recordAcquisitionDecision(config, input, gate, new Date().toISOString());
+      return json({ acquisitionCase, gate, outreachInitiated: false, offerGenerated: false }, 201);
+    } catch (error) {
+      if (error instanceof SupabaseFeatureUnavailableError) return json({ error: "Apply the Phase 3 seller-acquisition migration before recording a decision." }, 409);
       throw error;
     }
   }

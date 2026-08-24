@@ -52,6 +52,8 @@ Cal.com is queried only to resolve the configured public booking link, without t
 
 AI-assisted intake remains inside the authenticated Worker. It creates a versioned packet containing coded intake facts and qualification evidence while excluding identity, contact values, address, APN, exact financial amounts, and free-text notes. The app makes no AI-provider request. Structured imported output requires provider/model provenance and a human decision, and it cannot mutate inquiry status, permissions, scheduling, qualification, or outreach.
 
+Phase 3 milestone 1 connects an inbound inquiry to the existing opportunity engine only inside the authenticated Worker. An operator cites a zero-cost public record or completed human verification, confirms parcel identity, records owner/authority standing and confidence, and supplies bounded underwriting evidence. One restricted PostgreSQL function persists the normalized opportunity evaluation, acquisition case, and immutable verification together. The existing buyer-demand model can then create its own immutable run and revised evaluation. An append-only human decision may advance, hold, or decline; advance requires the latest non-rejected evaluation, matched owner, verified seller authority, a current buyer-demand run, and explicit review attestations. No action contacts a seller or buyer, transmits data to a provider, or generates or authorizes an offer.
+
 ### GitHub
 
 GitHub is the canonical source repository and deployment history.

@@ -44,6 +44,8 @@ Add:
 
 After revenue validates the model, evaluate:
 
+- [x] first operational milestone: seller inquiry → verified property research → underwriting → buyer-demand evidence → human acquisition decision
+
 - premium property-data providers
 - premium AVM/comparable-sales data
 - title/lien data

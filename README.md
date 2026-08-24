@@ -59,7 +59,11 @@ Phase 2 includes a durable opportunity desk, gated property-evidence workflow, b
 - the application never sends that packet to an AI provider; imported structured results require provider/model provenance and a written human decision;
 - AI assistance is advisory and cannot change qualification, contact permissions, inquiry status, booking, or outreach.
 
-Apply the migrations in `supabase/migrations/` in filename order through `202608230007_phase2_ai_assisted_seller_intake.sql`. The private and public Workers build separately with `npm run build` and `npm run build:seller`. See [`docs/PHASE-2-SELLER-INTAKE.md`](docs/PHASE-2-SELLER-INTAKE.md), [`docs/PHASE-2-AI-ASSISTED-SELLER-INTAKE.md`](docs/PHASE-2-AI-ASSISTED-SELLER-INTAKE.md), and [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+Apply the migrations in `supabase/migrations/` in filename order. The private and public Workers build separately with `npm run build` and `npm run build:seller`. See [`docs/PHASE-2-SELLER-INTAKE.md`](docs/PHASE-2-SELLER-INTAKE.md), [`docs/PHASE-2-AI-ASSISTED-SELLER-INTAKE.md`](docs/PHASE-2-AI-ASSISTED-SELLER-INTAKE.md), and [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+
+## Phase 3 operational milestone 1
+
+The private Seller Inquiries desk now connects one inbound inquiry to cited zero-cost property/ownership research, a deterministic immutable underwriting evaluation, the existing explainable buyer-demand model, and an append-only human advance/hold/decline decision. The database independently rechecks the evidence and advance gates. This workflow does not transmit data to a provider, contact a seller or buyer, or generate or authorize an offer. Apply `202608240001_phase3_seller_acquisition_workflow.sql`; see [`docs/PHASE-3-MILESTONE-1.md`](docs/PHASE-3-MILESTONE-1.md).
 
 ## Phase 1 foundation
 
