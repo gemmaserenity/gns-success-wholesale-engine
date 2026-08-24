@@ -511,6 +511,7 @@ function renderSellerInquiry(inquiry) {
     <div class="seller-inquiry-header"><div><p class="eyebrow">${escapeHtml(inquiry.qualification.tier)} · ${escapeHtml(inquiry.status.replaceAll("_", " "))}</p><h4>${escapeHtml(inquiry.propertyAddress)}</h4><p>${escapeHtml(inquiry.name)} · ${escapeHtml(inquiry.county.replaceAll("_", " "))} · ${escapeHtml(new Date(inquiry.submittedAt).toLocaleString())}</p></div><div class="score"><strong>${inquiry.qualification.score}</strong><span>/ 100 · INTAKE</span></div></div>
     <div class="seller-inquiry-grid"><div><span>Timeline</span><strong>${escapeHtml(inquiry.timeline.replaceAll("_", " "))}</strong></div><div><span>Situation</span><strong>${escapeHtml(inquiry.motivation.replaceAll("_", " "))}</strong></div><div><span>Condition</span><strong>${escapeHtml(inquiry.condition.replaceAll("_", " "))}</strong></div><div><span>Occupancy</span><strong>${escapeHtml(inquiry.occupancy.replaceAll("_", " "))}</strong></div></div>
     <div class="seller-contact-evidence"><p><strong>Contact:</strong> ${escapeHtml([inquiry.email, inquiry.phone].filter(Boolean).join(" · ") || "None")}</p><p><strong>Authorized channels:</strong> ${escapeHtml(permission.join(" · ") || "None — do not initiate outreach")}</p><p><strong>Relationship:</strong> ${escapeHtml(inquiry.relationship.replaceAll("_", " "))}${inquiry.apn ? ` · <strong>APN:</strong> ${escapeHtml(inquiry.apn)}` : ""}</p><p><strong>Asking / mortgage:</strong> ${inquiry.askingPrice === undefined ? "Not provided" : money.format(inquiry.askingPrice)} / ${inquiry.mortgageBalance === undefined ? "Not provided" : money.format(inquiry.mortgageBalance)}</p>${inquiry.notes ? `<p><strong>Seller notes:</strong> ${escapeHtml(inquiry.notes)}</p>` : ""}<p><strong>Assessment:</strong> ${escapeHtml(inquiry.qualification.summary)}</p><p><strong>Review flags:</strong> ${escapeHtml(inquiry.qualification.reviewFlags.join(" · ") || "None")}</p><p><strong>Delivery:</strong> ${escapeHtml(delivery)}</p>${inquiry.bookingUrl ? `<p><strong>Cal.com:</strong> Booking link offered</p>` : ""}</div>
+    <section class="seller-ai-workspace" data-inquiry-id="${escapeHtml(inquiry.id)}"><div class="seller-ai-heading"><div><strong>Human-reviewed AI assistance</strong><p>Prepares coded facts only. Nothing is sent to an AI service, and no outreach or record status can be changed here.</p></div><button class="secondary prepare-ai-packet" type="button">Prepare minimized packet</button></div><div class="seller-ai-content" aria-live="polite"></div></section>
     <form class="seller-status-form" data-inquiry-id="${escapeHtml(inquiry.id)}"><label>Record status<select name="status"><option value="NEW" ${inquiry.status === "NEW" ? "selected" : ""}>New</option><option value="REVIEWING" ${inquiry.status === "REVIEWING" ? "selected" : ""}>Reviewing</option><option value="CONTACTED" ${inquiry.status === "CONTACTED" ? "selected" : ""}>Contacted</option><option value="APPOINTMENT_SET" ${inquiry.status === "APPOINTMENT_SET" ? "selected" : ""}>Appointment set</option><option value="CLOSED" ${inquiry.status === "CLOSED" ? "selected" : ""}>Closed</option></select></label><label class="rationale">Rationale<input name="rationale" required minlength="10" maxlength="1000" placeholder="What changed and what evidence supports it?"></label><button class="secondary" type="submit">Record status</button><div class="seller-status-feedback" aria-live="polite"></div></form>
   </article>`;
 }
@@ -548,6 +549,43 @@ $("#seller-inquiry-list").addEventListener("submit", async (event) => {
     const data = Object.fromEntries(new FormData(form));
     const body = await send("/api/seller/inquiries/status", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ inquiryId: form.dataset.inquiryId, status: data.status, rationale: data.rationale }) });
     await loadSellerInquiries(`${body.inquiry.status.replaceAll("_", " ")} status recorded. No outreach was initiated by this action.`);
+  } catch (error) {
+    feedback.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
+    button.disabled = false;
+  }
+});
+$("#seller-inquiry-list").addEventListener("click", async (event) => {
+  const button = event.target.closest(".prepare-ai-packet");
+  if (!button) return;
+  const workspace = button.closest(".seller-ai-workspace");
+  const content = workspace.querySelector(".seller-ai-content");
+  button.disabled = true;
+  content.innerHTML = '<p class="loading">Preparing privacy-minimized evidence…</p>';
+  try {
+    const body = await send("/api/seller/inquiries/ai-packet", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ inquiryId: workspace.dataset.inquiryId }) });
+    const sample = JSON.stringify({ summary: "Evidence-based advisory summary.", verificationQuestions: ["What evidence should the operator verify before proceeding?"], riskFlags: ["MISSING_EVIDENCE"], recommendedNextStep: "VERIFY_PUBLIC_RECORDS" }, null, 2);
+    const previous = body.previousResult ? `<div class="success-message"><strong>Latest reviewed assistance:</strong> ${escapeHtml(body.previousResult.decision.replaceAll("_", " "))} · ${escapeHtml(body.previousResult.provider)} / ${escapeHtml(body.previousResult.model)}<br>${escapeHtml(body.previousResult.output.summary)}</div>` : "";
+    content.innerHTML = `<div class="ai-privacy-note"><strong>No seller identity or contact data is included. No data was sent.</strong><p>Excluded: ${escapeHtml(body.excludedFields.join(" · "))}</p><p>Packet fingerprint: ${escapeHtml(body.packet.payloadSha256)}</p></div>${previous}<label>Prompt and minimized packet<textarea readonly rows="12">${escapeHtml(body.prompt)}</textarea></label><form class="seller-ai-result-form" data-packet-id="${escapeHtml(body.packet.packetId)}"><div class="seller-ai-form-grid"><label>Provider used<input name="provider" required minlength="2" maxlength="120" placeholder="Record the authorized AI provider"></label><label>Model used<input name="model" required maxlength="160" placeholder="Exact model or version"></label><label class="full">Validated JSON result<textarea name="output" required rows="10" placeholder="${escapeHtml(sample)}"></textarea></label><label>Human decision<select name="decision"><option value="ACCEPTED_AS_ASSISTANCE">Accept as assistance</option><option value="NEEDS_REVISION">Needs revision</option><option value="REJECTED">Reject</option></select></label><label class="full">Review rationale<textarea name="rationale" required minlength="20" maxlength="1000" rows="3" placeholder="Explain what you verified and why this decision is supportable."></textarea></label></div><button class="secondary" type="submit">Record reviewed assistance</button><div class="seller-ai-feedback" aria-live="polite"></div></form>`;
+  } catch (error) {
+    content.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
+    button.disabled = false;
+  }
+});
+
+$("#seller-inquiry-list").addEventListener("submit", async (event) => {
+  const form = event.target.closest(".seller-ai-result-form");
+  if (!form) return;
+  event.preventDefault();
+  const button = event.submitter;
+  const feedback = form.querySelector(".seller-ai-feedback");
+  button.disabled = true;
+  feedback.innerHTML = "";
+  try {
+    const data = Object.fromEntries(new FormData(form));
+    let output;
+    try { output = JSON.parse(data.output); } catch { throw new Error("The AI result must be valid JSON."); }
+    const body = await send("/api/seller/inquiries/ai-result", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ packetId: form.dataset.packetId, provider: data.provider, model: data.model, output, decision: data.decision, rationale: data.rationale }) });
+    feedback.innerHTML = `<div class="success-message">Reviewed advisory assistance recorded as ${escapeHtml(body.result.decision.replaceAll("_", " "))}. Status, permissions, and outreach were not changed.</div>`;
   } catch (error) {
     feedback.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
     button.disabled = false;

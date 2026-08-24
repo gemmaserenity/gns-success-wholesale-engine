@@ -35,7 +35,7 @@ Add:
 - [x] selective skip tracing with qualification, privacy, cost, provenance, contact-standing, and audit controls
 - [x] seller-facing portal
 - [x] inbound seller qualification
-- AI-assisted seller intake
+- [x] AI-assisted seller intake
 - [x] Cal.com integration
 - [x] Resend transactional communications
 - [x] operator notifications

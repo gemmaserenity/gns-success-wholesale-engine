@@ -30,7 +30,7 @@ See `/docs` for architecture and implementation documentation.
 
 ## Phase 2 operational milestone
 
-Phase 2 now includes a durable opportunity desk, gated property-evidence workflow, buyer database, explainable buyer-demand matching, selective skip tracing, and public seller intake:
+Phase 2 includes a durable opportunity desk, gated property-evidence workflow, buyer database, explainable buyer-demand matching, selective skip tracing, public seller intake, and human-reviewed AI assistance:
 
 - normalized property, owner, ownership, distress-event, evaluation, pipeline, and audit records persist in one database transaction;
 - repeated evaluation requests are idempotent;
@@ -54,9 +54,12 @@ Phase 2 now includes a durable opportunity desk, gated property-evidence workflo
 - an independently deployed public seller Worker records inbound property facts, deterministic qualification, and explicit channel permissions from an isolated asset bundle with no route into the private dashboard;
 - eligible sellers receive a Cal.com booking option without the Worker sending seller data to Cal.com;
 - Resend sends consented transactional acknowledgements and PII-minimized operator notifications with idempotent delivery evidence;
-- seller submissions, consent, status, appointment offers, and delivery history are append-only and auditable.
+- seller submissions, consent, status, appointment offers, and delivery history are append-only and auditable;
+- authenticated operators can prepare a versioned AI-review packet that excludes seller identity, contact values, address, APN, exact financial amounts, and notes;
+- the application never sends that packet to an AI provider; imported structured results require provider/model provenance and a written human decision;
+- AI assistance is advisory and cannot change qualification, contact permissions, inquiry status, booking, or outreach.
 
-Apply the migrations in `supabase/migrations/` in filename order. Seller intake requires `202608230006_phase2_seller_intake.sql`. The private and public Workers build separately with `npm run build` and `npm run build:seller`. See [`docs/PHASE-2-SELLER-INTAKE.md`](docs/PHASE-2-SELLER-INTAKE.md) for the public acquisition boundary and [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for current deployment checks.
+Apply the migrations in `supabase/migrations/` in filename order through `202608230007_phase2_ai_assisted_seller_intake.sql`. The private and public Workers build separately with `npm run build` and `npm run build:seller`. See [`docs/PHASE-2-SELLER-INTAKE.md`](docs/PHASE-2-SELLER-INTAKE.md), [`docs/PHASE-2-AI-ASSISTED-SELLER-INTAKE.md`](docs/PHASE-2-AI-ASSISTED-SELLER-INTAKE.md), and [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
 ## Phase 1 foundation
 

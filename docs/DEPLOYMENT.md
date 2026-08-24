@@ -186,5 +186,7 @@ Deploy the authenticated Worker with `wrangler.jsonc` and the public Worker with
 7. When email permission is not checked, no seller email is sent. Confirm calls and texts are never initiated.
 8. In **Seller inquiries**, confirm the assessment reasons, consented channels, booking offer, and provider delivery outcomes are visible.
 9. Record an operator status with rationale and confirm a new status event appears without modifying the original inquiry or initiating outreach.
+10. In a seller inquiry, prepare an AI review packet and confirm the browser states that no data was sent; inspect the packet to verify name, email, phone, address, APN, exact amounts, and notes are absent.
+11. Import a synthetic valid `seller-ai-output-v1` result with provider/model provenance and a human decision. Confirm immutable packet, result, review, and PII-minimized audit records exist while inquiry status, consent, booking, and delivery records remain unchanged.
 
 Do not submit real seller information during deployment testing unless the person has knowingly provided it for this workflow. Use an operator-controlled test address and clearly synthetic property details.

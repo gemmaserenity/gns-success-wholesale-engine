@@ -129,3 +129,13 @@ The Worker resolves an eligible event's public Cal.com URL without seller data. 
 ### Provider deliveries are minimized and idempotent
 
 Resend acknowledgements use a stable idempotency key. Internal alerts include only an inquiry reference, county, and qualification routing result, directing the operator to the Access-protected dashboard for PII.
+
+## 2026-08-23 — Human-reviewed AI assistance
+
+### Data minimization precedes provider use
+
+The application generates a coded, versioned intake packet that excludes direct identity, contact values, property address, APN, exact financial amounts, and free-text notes. It never sends that packet to an external service. Choosing or activating a provider remains a separately authorized decision.
+
+### AI output is evidence support, not operational authority
+
+Only a bounded structured response can be imported. Provider/model provenance and an operator acceptance, rejection, or revision rationale are mandatory. AI assistance cannot modify the seller submission, deterministic qualification, consent, status, booking, or communication evidence and cannot initiate outreach.

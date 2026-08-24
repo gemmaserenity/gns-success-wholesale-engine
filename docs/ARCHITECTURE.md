@@ -50,6 +50,8 @@ The seller-acquisition boundary is a separate Cloudflare Worker with its own iso
 
 Cal.com is queried only to resolve the configured public booking link, without transmitting seller data. Resend sends a seller acknowledgement only when email permission was selected and sends a PII-minimized internal notification. Delivery outcomes are append-only. No call, text, or AI-provider adapter is activated.
 
+AI-assisted intake remains inside the authenticated Worker. It creates a versioned packet containing coded intake facts and qualification evidence while excluding identity, contact values, address, APN, exact financial amounts, and free-text notes. The app makes no AI-provider request. Structured imported output requires provider/model provenance and a human decision, and it cannot mutate inquiry status, permissions, scheduling, qualification, or outreach.
+
 ### GitHub
 
 GitHub is the canonical source repository and deployment history.

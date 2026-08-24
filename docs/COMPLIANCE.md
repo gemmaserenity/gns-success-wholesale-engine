@@ -23,6 +23,8 @@ Inbound seller intake records email, call, and text permission separately. A pro
 
 Seller qualification is a routing assessment only. The portal states that submission is not an offer, contract, appraisal, or promise to buy. Reported ownership and representative authority remain subject to human verification. Cal.com receives no seller data from the Worker; a seller transmits booking information only by choosing the public booking link.
 
+AI assistance excludes seller identity, contact values, property address, APN, exact financial amounts, and seller-authored notes. The application does not transmit the packet externally. Imported results are advisory, strictly structured, provider/model-attributed, and unusable until an operator records an acceptance, rejection, or revision decision with rationale. AI output cannot create consent, authorize contact, change status, initiate outreach, or constitute an offer, appraisal, title conclusion, or legal advice.
+
 Arizona-specific wholesale transaction requirements should be versioned and configurable.
 
 This documentation is operational guidance and not a substitute for legal advice.

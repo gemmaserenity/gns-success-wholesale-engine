@@ -72,3 +72,9 @@ Migration `202608230005_phase2_selective_skip_tracing.sql` creates single-opport
 Migration `202608230006_phase2_seller_intake.sql` adds immutable seller submissions, deterministic qualification assessments, channel-level consent events, append-only operator status events, Cal.com appointment offers, and Resend delivery outcomes. The original seller-authored facts and consent snapshot are never updated.
 
 `persist_seller_inquiry(jsonb, jsonb)` enforces privacy acceptance, basic bot controls, channel/contact consistency, and a single idempotent submission UUID before storing the intake and its evidence in one transaction. `record_seller_communication_delivery(jsonb)` and `record_seller_inquiry_status(jsonb)` append provider and operator history. `current_seller_inquiries` supplies the private Worker with the current status while preserving every underlying event.
+
+## Phase 2 AI-assisted seller intake
+
+Migration `202608230007_phase2_ai_assisted_seller_intake.sql` creates immutable `seller_ai_review_packets`, `seller_ai_assistance_results`, and `seller_ai_assistance_reviews`. A packet stores only versioned, coded facts plus a SHA-256 fingerprint; database validation limits its top-level fields. The original inquiry remains authoritative and unchanged.
+
+`prepare_seller_ai_review_packet(jsonb)` is idempotent for an inquiry, schema versions, and payload fingerprint. `record_seller_ai_assistance(jsonb, jsonb)` stores provider/model provenance and a mandatory human decision in one transaction. Service-role update and delete are revoked. `current_seller_ai_assistance` exposes the latest packet and reviewed result to the private Worker. Audit payloads contain control metadata but not seller PII, the minimized input, or AI narrative.

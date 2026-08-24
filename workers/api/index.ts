@@ -8,6 +8,7 @@ import {
 } from "../../src/domain/buyers/matching";
 import { buyerStatuses } from "../../src/domain/buyers/types";
 import type { BuyerStatus } from "../../src/domain/buyers/types";
+import { buildSellerAiMinimizedInput, buildSellerAiPrompt, sellerAiResultInputSchema } from "../../src/domain/seller-intake/ai-assistance";
 import { sellerInquiryStatusInputSchema } from "../../src/domain/seller-intake/schema";
 import { sellerInquiryStatuses, sellerQualificationTiers } from "../../src/domain/seller-intake/types";
 import type { SellerInquiryStatus, SellerQualificationTier } from "../../src/domain/seller-intake/types";
@@ -46,9 +47,11 @@ import {
   recordContactStanding,
 } from "../../src/services/skip-trace-repository";
 import {
+  getSellerInquiry,
   listSellerInquiries,
   recordSellerInquiryStatus,
 } from "../../src/services/seller-intake-repository";
+import { getSellerAiStatus, prepareSellerAiPacket, recordSellerAiResult } from "../../src/services/seller-ai-assistance-repository";
 
 const jsonHeaders = { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" };
 
@@ -114,6 +117,11 @@ function isSellerQualificationTier(value: string): value is SellerQualificationT
   return sellerQualificationTiers.some((tier) => tier === value);
 }
 
+async function sha256Hex(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
 async function handleApi(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
   if (url.pathname === "/api/health" && request.method === "GET") {
@@ -156,6 +164,48 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
       return json({ inquiry: await recordSellerInquiryStatus(config, input, new Date().toISOString()), outreachInitiated: false }, 201);
     } catch (error) {
       if (error instanceof SupabaseFeatureUnavailableError) return json({ error: "Apply the Phase 2 seller-intake migration before updating inquiries." }, 409);
+      throw error;
+    }
+  }
+  if (url.pathname === "/api/seller/inquiries/ai-status" && request.method === "GET") {
+    const config = supabaseConfig(env);
+    if (!config) return json({ error: "Supabase persistence is required for AI-assisted seller intake." }, 503);
+    const inquiryId = z.string().uuid().parse(url.searchParams.get("inquiryId"));
+    try {
+      return json({ ...(await getSellerAiStatus(config, inquiryId)), externalTransmissionByApplication: false, outreachInitiated: false });
+    } catch (error) {
+      if (error instanceof SupabaseFeatureUnavailableError) return json({ available: false }, 409);
+      throw error;
+    }
+  }
+  if (url.pathname === "/api/seller/inquiries/ai-packet" && request.method === "POST") {
+    const config = supabaseConfig(env);
+    if (!config) return json({ error: "Supabase persistence is required for AI-assisted seller intake." }, 503);
+    const { inquiryId } = z.object({ inquiryId: z.string().uuid() }).strict().parse(JSON.parse(await parseBoundedText(request, 8_192)));
+    try {
+      const inquiry = await getSellerInquiry(config, inquiryId);
+      const minimizedInput = buildSellerAiMinimizedInput(inquiry);
+      const packet = await prepareSellerAiPacket(config, {
+        packetId: crypto.randomUUID(), inquiryId, inputVersion: "seller-ai-input-v1", promptVersion: "seller-ai-prompt-v1",
+        minimizedInput, payloadSha256: await sha256Hex(JSON.stringify(minimizedInput)), preparedAt: new Date().toISOString(),
+      });
+      const previousResult = (await getSellerAiStatus(config, inquiryId)).result ?? null;
+      return json({ packet, previousResult, prompt: buildSellerAiPrompt(packet.minimizedInput), excludedFields: ["name", "email", "phone", "propertyAddress", "apn", "notes"], externalTransmissionByApplication: false, outreachInitiated: false }, 201);
+    } catch (error) {
+      if (error instanceof SupabaseFeatureUnavailableError) return json({ error: "Apply the Phase 2 AI-assisted-intake migration before preparing a review packet." }, 409);
+      throw error;
+    }
+  }
+  if (url.pathname === "/api/seller/inquiries/ai-result" && request.method === "POST") {
+    const config = supabaseConfig(env);
+    if (!config) return json({ error: "Supabase persistence is required for AI-assisted seller intake." }, 503);
+    const input = sellerAiResultInputSchema.parse(JSON.parse(await parseBoundedText(request, 32_768)));
+    const now = new Date().toISOString();
+    try {
+      const result = await recordSellerAiResult(config, { resultId: crypto.randomUUID(), ...input, generatedAt: now, reviewedAt: now });
+      return json({ result, advisoryOnly: true, statusChanged: false, permissionsChanged: false, externalTransmissionByApplication: false, outreachInitiated: false }, 201);
+    } catch (error) {
+      if (error instanceof SupabaseFeatureUnavailableError) return json({ error: "Apply the Phase 2 AI-assisted-intake migration before recording assistance." }, 409);
       throw error;
     }
   }
