@@ -67,7 +67,7 @@ The private Seller Inquiries desk now connects one inbound inquiry to cited zero
 
 ## Phase 3 operational milestone 2
 
-An advanced acquisition case now exposes a private 13-part diligence workspace. Every review is immutable, fully sourced, zero-cost, tied to the current evaluation/buyer-demand/advance evidence, and independently assessed again in PostgreSQL as open, blocked, or ready to present for a separate human offer-authorization decision. Readiness does not authorize or generate an offer and does not permit outreach. Apply `202608240002_phase3_acquisition_diligence.sql`; see [`docs/PHASE-3-MILESTONE-2.md`](docs/PHASE-3-MILESTONE-2.md).
+An advanced acquisition case now exposes a private 13-part diligence workspace. Every review is immutable, fully sourced, zero-cost, tied to the current evaluation/buyer-demand/advance evidence, and independently assessed again in PostgreSQL as open, blocked, or ready to present for a separate human offer-authorization decision. Readiness does not authorize or generate an offer and does not permit outreach. Apply `202608240002_phase3_acquisition_diligence.sql`; see [`docs/PHASE-3-MILESTONE-2.md`](docs/PHASE-3-MILESTONE-2.md) and [`docs/PHASE-3-MILESTONE-2-COMPLETION.md`](docs/PHASE-3-MILESTONE-2-COMPLETION.md).
 
 ## Phase 1 foundation
 
