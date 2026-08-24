@@ -204,7 +204,7 @@
       </div>
 
       <div class="mapping-block">
-        <h4>Internal offer authorization — authority stops before document generation</h4>
+        <h4>Internal offer authorization — the authorization action does not generate a document</h4>
         <div class="table-wrap"><table class="field-table"><thead><tr><th>Authorization field</th><th>Evidence or limit</th><th>Map exactly this</th><th>Control</th></tr></thead><tbody>
           <tr><td><code>Current diligence</code></td><td>Newest ready 13-item review and its linked evaluation, buyer run, and advance decision</td><td>The exact immutable record identifiers.</td><td>Any newer evidence makes authority stale.</td></tr>
           <tr><td><code>Authorizer role</code></td><td>Human acquisitions-manager or principal attestation</td><td>The role under which the operator makes the decision.</td><td>Access identity is server-hashed; role remains an explicit attestation pending centralized RBAC.</td></tr>
@@ -213,6 +213,18 @@
           <tr><td><code>Earnest / inspection / closing</code></td><td>Approved internal operating limits</td><td>Exact earnest-money cents and whole-day periods.</td><td>Earnest ≤ $10,000; inspection 1–30; closing 1–60 and not shorter than inspection.</td></tr>
           <tr><td><code>Validity</code></td><td>24, 48, or 72 hours</td><td>Expiry calculated from the server authorization time.</td><td>Expired authority is unusable.</td></tr>
           <tr><td><code>Decline / revoke</code></td><td>Human rationale</td><td>A new immutable authorization decision or revocation event.</td><td>Never edit or delete the prior record.</td></tr>
+        </tbody></table></div>
+      </div>
+
+      <div class="mapping-block">
+        <h4>Internal offer draft — preparation stops before seller-facing release</h4>
+        <div class="table-wrap"><table class="field-table"><thead><tr><th>Draft field</th><th>Authoritative source</th><th>Map exactly this</th><th>Control</th></tr></thead><tbody>
+          <tr><td><code>Authorization</code></td><td>Latest current `AUTHORIZED` record</td><td>Exact authorization identifier and expiry.</td><td>Expired, revoked, or stale authority cannot create a draft.</td></tr>
+          <tr><td><code>Seller / property</code></td><td>Immutable inbound seller inquiry</td><td>Seller name and property address assembled by PostgreSQL.</td><td>The browser cannot submit or override this content.</td></tr>
+          <tr><td><code>Terms</code></td><td>Exact bounded authorization</td><td>Purchase ceiling, assignment target, earnest money, inspection days, and closing days.</td><td>No negotiation language or unauthorized term can be added.</td></tr>
+          <tr><td><code>Template / revision / hash</code></td><td>`internal-offer-terms-v1` and database revision history</td><td>Fixed template version, next revision, and PostgreSQL SHA-256.</td><td>Every preparation appends; no prior draft is edited.</td></tr>
+          <tr><td><code>Classification / notice</code></td><td>Fixed system controls</td><td>Internal draft not for delivery; not an offer, contract, disclosure, or signature instrument.</td><td>Operator text cannot weaken the boundary.</td></tr>
+          <tr><td><code>Next reviews</code></td><td>Milestone 4 release gate</td><td>Approved legal template, approved wholesale disclosure, and final human release.</td><td>No PDF, download, signature, delivery, provider, or outreach action exists.</td></tr>
         </tbody></table></div>
       </div>
 

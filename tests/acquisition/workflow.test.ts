@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { acquisitionResearchInputSchema, acquisitionDecisionInputSchema, acquisitionDiligenceInputSchema, offerAuthorizationInputSchema } from "../../src/domain/acquisition/schema";
-import { assessAcquisitionDiligence, buildSellerAcquisitionLead, evaluateAcquisitionDecisionGate, evaluateDiligenceEntryGate, evaluateOfferAuthorizationGate } from "../../src/domain/acquisition/workflow";
+import { acquisitionResearchInputSchema, acquisitionDecisionInputSchema, acquisitionDiligenceInputSchema, offerAuthorizationInputSchema, offerDraftInputSchema } from "../../src/domain/acquisition/schema";
+import { assessAcquisitionDiligence, buildSellerAcquisitionLead, evaluateAcquisitionDecisionGate, evaluateDiligenceEntryGate, evaluateOfferAuthorizationGate, evaluateOfferDraftGate } from "../../src/domain/acquisition/workflow";
 import { diligenceItemKinds } from "../../src/domain/acquisition/types";
-import type { AcquisitionCaseStatus, AcquisitionDiligenceInput, AcquisitionDiligenceStatus, AcquisitionResearchInput, OfferAuthorizationInput } from "../../src/domain/acquisition/types";
+import type { AcquisitionCaseStatus, AcquisitionDiligenceInput, AcquisitionDiligenceStatus, AcquisitionResearchInput, OfferAuthorizationInput, OfferAuthorizationStatusRecord, OfferDraftInput } from "../../src/domain/acquisition/types";
 import type { SellerInquiry } from "../../src/domain/seller-intake/types";
 
 const inquiry: SellerInquiry = {
@@ -61,6 +61,23 @@ const offerAuthorizationInput: OfferAuthorizationInput = {
   noOfferGenerated: true, noOutreachInitiated: true,
 };
 
+const offerAuthorizationStatus: OfferAuthorizationStatusRecord = {
+  authorizationId: "00000000-0000-4000-8000-000000000810", caseId: status.caseId,
+  diligenceReviewId: diligenceStatus.reviewId, sourceEvaluationId: status.evaluation.evaluationId,
+  buyerMatchRunId: status.buyerDemand?.runId ?? "", acquisitionDecisionId: advancedStatus.decision?.decisionId ?? "",
+  decision: "AUTHORIZE_INTERNAL_TERMS", effectiveStatus: "AUTHORIZED", authorizerFingerprint: "a".repeat(64),
+  authorizerRole: "PRINCIPAL", rationale: "Current evidence supports controlled internal draft preparation.",
+  terms: offerAuthorizationInput.terms!, authorizedAt: "2026-08-24T03:15:00.000Z", expiresAt: "2026-08-25T03:15:00.000Z",
+};
+
+const offerDraftInput: OfferDraftInput = {
+  caseId: status.caseId, inquiryId: status.inquiryId, authorizationId: offerAuthorizationStatus.authorizationId,
+  templateVersion: "internal-offer-terms-v1", preparerRole: "ACQUISITIONS_MANAGER",
+  preparationNotes: "Prepared for internal legal and compliance review against the exact current authorization.",
+  exactAuthorizationReconfirmed: true, internalDraftOnly: true, legalReviewRequired: true,
+  sellerFacingApproved: false, noSignatureRequested: true, noDeliveryInitiated: true, noOutreachInitiated: true,
+};
+
 describe("seller acquisition workflow", () => {
   it("builds underwriting input with inquiry provenance and no external-provider action", () => {
     const lead = buildSellerAcquisitionLead(inquiry, research);
@@ -117,5 +134,21 @@ describe("seller acquisition workflow", () => {
     expect(evaluateOfferAuthorizationGate(advancedStatus, { ...diligenceStatus, readiness: "NEEDS_RESEARCH" }, offerAuthorizationInput)).toMatchObject({ allowed: false, reasonCodes: expect.arrayContaining(["CURRENT_READY_DILIGENCE_REQUIRED"]) });
     const excessive = { ...offerAuthorizationInput, terms: { ...offerAuthorizationInput.terms!, purchasePriceCents: 15_300_000 } };
     expect(evaluateOfferAuthorizationGate(advancedStatus, diligenceStatus, excessive)).toMatchObject({ allowed: false, reasonCodes: expect.arrayContaining(["PURCHASE_PRICE_EXCEEDS_TARGET_FEE_CEILING"]) });
+  });
+
+  it("accepts only draft-only preparation controls", () => {
+    expect(offerDraftInputSchema.safeParse(offerDraftInput).success).toBe(true);
+    expect(offerDraftInputSchema.safeParse({ ...offerDraftInput, sellerFacingApproved: true }).success).toBe(false);
+    expect(offerDraftInputSchema.safeParse({ ...offerDraftInput, noDeliveryInitiated: false }).success).toBe(false);
+  });
+
+  it("prepares a draft only from the exact active authorization", () => {
+    const now = new Date("2026-08-24T04:00:00.000Z");
+    expect(evaluateOfferDraftGate(advancedStatus, diligenceStatus, offerAuthorizationStatus, offerDraftInput, now))
+      .toEqual({ allowed: true, reasonCodes: ["INTERNAL_DRAFT_PREPARATION_ALLOWED"] });
+    expect(evaluateOfferDraftGate(advancedStatus, diligenceStatus, { ...offerAuthorizationStatus, effectiveStatus: "REVOKED" }, offerDraftInput, now))
+      .toMatchObject({ allowed: false, reasonCodes: expect.arrayContaining(["AUTHORIZATION_NOT_ACTIVE"]) });
+    expect(evaluateOfferDraftGate(advancedStatus, diligenceStatus, offerAuthorizationStatus, { ...offerDraftInput, authorizationId: "00000000-0000-4000-8000-000000000899" }, now))
+      .toMatchObject({ allowed: false, reasonCodes: expect.arrayContaining(["CURRENT_AUTHORIZATION_REQUIRED"]) });
   });
 });

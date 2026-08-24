@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { acquisitionDecisions, diligenceItemKinds, diligenceItemStatuses, offerAuthorizationDecisions, offerAuthorizationRoles, ownerIdentityStatuses, sellerAuthorityStatuses } from "./types";
+import { acquisitionDecisions, diligenceItemKinds, diligenceItemStatuses, offerAuthorizationDecisions, offerAuthorizationRoles, offerDraftTemplateVersions, ownerIdentityStatuses, sellerAuthorityStatuses } from "./types";
 
 const optionalMoney = z.preprocess(
   (value) => value === "" || value === undefined || value === null ? undefined : Number(value),
@@ -145,5 +145,21 @@ export const offerAuthorizationRevocationInputSchema = z.object({
   reason: z.string().trim().min(20).max(1_000),
   internalAuthorizationOnly: z.literal(true),
   noOfferGenerated: z.literal(true),
+  noOutreachInitiated: z.literal(true),
+}).strict();
+
+export const offerDraftInputSchema = z.object({
+  caseId: z.string().uuid(),
+  inquiryId: z.string().uuid(),
+  authorizationId: z.string().uuid(),
+  templateVersion: z.enum(offerDraftTemplateVersions),
+  preparerRole: z.enum(offerAuthorizationRoles),
+  preparationNotes: z.string().trim().min(30).max(2_000),
+  exactAuthorizationReconfirmed: z.literal(true),
+  internalDraftOnly: z.literal(true),
+  legalReviewRequired: z.literal(true),
+  sellerFacingApproved: z.literal(false),
+  noSignatureRequested: z.literal(true),
+  noDeliveryInitiated: z.literal(true),
   noOutreachInitiated: z.literal(true),
 }).strict();

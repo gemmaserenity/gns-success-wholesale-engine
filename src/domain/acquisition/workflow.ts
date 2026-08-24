@@ -1,7 +1,7 @@
 import type { SellerInquiry } from "../seller-intake/types";
 import type { RawLeadInput } from "../opportunities/types";
 import { diligenceItemKinds } from "./types";
-import type { AcquisitionCaseStatus, AcquisitionDecisionGate, AcquisitionDecisionInput, AcquisitionDiligenceAssessment, AcquisitionDiligenceInput, AcquisitionDiligenceStatus, AcquisitionResearchInput, DiligenceItemKind, OfferAuthorizationGate, OfferAuthorizationInput } from "./types";
+import type { AcquisitionCaseStatus, AcquisitionDecisionGate, AcquisitionDecisionInput, AcquisitionDiligenceAssessment, AcquisitionDiligenceInput, AcquisitionDiligenceStatus, AcquisitionResearchInput, DiligenceItemKind, OfferAuthorizationGate, OfferAuthorizationInput, OfferAuthorizationStatusRecord, OfferDraftGate, OfferDraftInput } from "./types";
 
 export function buildSellerAcquisitionLead(inquiry: SellerInquiry, research: AcquisitionResearchInput): RawLeadInput {
   return {
@@ -131,4 +131,33 @@ export function evaluateOfferAuthorizationGate(
     reasonCodes: reasonCodes.length ? reasonCodes : [input.decision === "AUTHORIZE_INTERNAL_TERMS" ? "INTERNAL_TERMS_READY_FOR_AUTHORIZATION" : "AUTHORIZATION_DECLINE_READY"],
     maximumPurchasePriceCents,
   };
+}
+
+export function evaluateOfferDraftGate(
+  status: AcquisitionCaseStatus,
+  diligence: AcquisitionDiligenceStatus | undefined,
+  authorization: OfferAuthorizationStatusRecord | undefined,
+  input: OfferDraftInput,
+  now: Date,
+): OfferDraftGate {
+  const reasonCodes: string[] = [];
+  if (status.caseId !== input.caseId || status.inquiryId !== input.inquiryId) reasonCodes.push("CASE_MISMATCH");
+  if (!authorization || authorization.authorizationId !== input.authorizationId) reasonCodes.push("CURRENT_AUTHORIZATION_REQUIRED");
+  else {
+    if (authorization.effectiveStatus !== "AUTHORIZED") reasonCodes.push("AUTHORIZATION_NOT_ACTIVE");
+    if (!authorization.terms || !authorization.expiresAt) reasonCodes.push("AUTHORIZED_TERMS_REQUIRED");
+    else if (new Date(authorization.expiresAt).getTime() <= now.getTime()) reasonCodes.push("AUTHORIZATION_EXPIRED");
+    if (authorization.caseId !== status.caseId) reasonCodes.push("AUTHORIZATION_CASE_MISMATCH");
+    if (authorization.sourceEvaluationId !== status.evaluation.evaluationId) reasonCodes.push("AUTHORIZATION_EVALUATION_STALE");
+    if (authorization.buyerMatchRunId !== status.buyerDemand?.runId) reasonCodes.push("AUTHORIZATION_BUYER_EVIDENCE_STALE");
+    if (authorization.acquisitionDecisionId !== status.decision?.decisionId) reasonCodes.push("AUTHORIZATION_DECISION_STALE");
+    if (authorization.diligenceReviewId !== diligence?.reviewId) reasonCodes.push("AUTHORIZATION_DILIGENCE_STALE");
+  }
+  if (!input.exactAuthorizationReconfirmed) reasonCodes.push("EXACT_AUTHORIZATION_RECONFIRMATION_REQUIRED");
+  if (!input.internalDraftOnly) reasonCodes.push("INTERNAL_DRAFT_BOUNDARY_REQUIRED");
+  if (!input.legalReviewRequired || input.sellerFacingApproved) reasonCodes.push("LEGAL_REVIEW_BOUNDARY_REQUIRED");
+  if (!input.noSignatureRequested) reasonCodes.push("NO_SIGNATURE_BOUNDARY_REQUIRED");
+  if (!input.noDeliveryInitiated) reasonCodes.push("NO_DELIVERY_BOUNDARY_REQUIRED");
+  if (!input.noOutreachInitiated) reasonCodes.push("NO_OUTREACH_BOUNDARY_REQUIRED");
+  return { allowed: reasonCodes.length === 0, reasonCodes: reasonCodes.length ? reasonCodes : ["INTERNAL_DRAFT_PREPARATION_ALLOWED"] };
 }

@@ -252,3 +252,25 @@ Deploy only the authenticated Worker. The public seller Worker remains unchanged
 9. Confirm Cloudflare Access still protects the private hostname and the unchanged public seller health endpoint remains healthy.
 
 Do not create an authorization in production merely to test deployment. Use schema inspection, a synthetic read, and the gated UI unless an approved synthetic case already exists.
+
+## Phase 3 controlled internal offer-draft milestone 4 deployment
+
+After the milestone 3 migration is registered, apply:
+
+```text
+supabase/migrations/202608240004_phase3_internal_offer_drafts.sql
+```
+
+Deploy only the authenticated Worker. The public seller Worker remains unchanged. Then verify:
+
+1. `seller_offer_drafts`, `current_seller_offer_drafts`, and `record_seller_offer_draft(jsonb)` exist; service-role update/delete remain revoked.
+2. An authenticated synthetic GET reports `internalDraftPreparationAvailable: true`, with seller-facing approval, signature, delivery, and outreach unavailable.
+3. Production POST requests require a Cloudflare Access identity that the Worker hashes; the browser supplies no actor identifier or document content.
+4. Preparation is denied unless the exact latest authorization remains `AUTHORIZED` and unexpired.
+5. PostgreSQL assembles seller name, property address, terms, expiry, classification, notice, and required next reviews from canonical records and computes the SHA-256.
+6. A repeated preparation appends the next revision without updating or deleting prior history.
+7. Revoking, expiring, or superseding the authorization changes the current draft projection without mutating the draft.
+8. Confirm no PDF/download, contract, disclosure, signature, delivery, provider, or outreach route or binding was introduced.
+9. Confirm Cloudflare Access still protects the private hostname and the unchanged public seller health endpoint remains healthy.
+
+Do not create a production draft merely to test deployment. Use schema inspection, a synthetic read, and the gated UI unless an approved synthetic case already exists.

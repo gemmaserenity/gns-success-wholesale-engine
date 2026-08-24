@@ -1,7 +1,7 @@
 import { z, ZodError } from "zod";
 import { TrusteeSaleCsvAdapter } from "../../src/adapters/csv/csv-adapter";
-import { acquisitionDecisionInputSchema, acquisitionDiligenceInputSchema, acquisitionResearchInputSchema, offerAuthorizationInputSchema, offerAuthorizationRevocationInputSchema } from "../../src/domain/acquisition/schema";
-import { assessAcquisitionDiligence, buildSellerAcquisitionLead, evaluateAcquisitionDecisionGate, evaluateDiligenceEntryGate, evaluateOfferAuthorizationGate } from "../../src/domain/acquisition/workflow";
+import { acquisitionDecisionInputSchema, acquisitionDiligenceInputSchema, acquisitionResearchInputSchema, offerAuthorizationInputSchema, offerAuthorizationRevocationInputSchema, offerDraftInputSchema } from "../../src/domain/acquisition/schema";
+import { assessAcquisitionDiligence, buildSellerAcquisitionLead, evaluateAcquisitionDecisionGate, evaluateDiligenceEntryGate, evaluateOfferAuthorizationGate, evaluateOfferDraftGate } from "../../src/domain/acquisition/workflow";
 import { buyerProfileInputSchema } from "../../src/domain/buyers/schema";
 import {
   analyzeBuyerDemand,
@@ -27,7 +27,7 @@ import { normalizeApn, normalizeCounty } from "../../src/domain/opportunities/no
 import { counties, pipelineStates } from "../../src/domain/opportunities/types";
 import type { County, PipelineState } from "../../src/domain/opportunities/types";
 import { evaluateOpportunity } from "../../src/services/evaluate-opportunity";
-import { getAcquisitionCase, getAcquisitionDiligence, getOfferAuthorization, persistAcquisitionCase, persistAcquisitionDiligence, persistOfferAuthorization, recordAcquisitionDecision, revokeOfferAuthorization } from "../../src/services/acquisition-repository";
+import { getAcquisitionCase, getAcquisitionDiligence, getOfferAuthorization, getOfferDraft, persistAcquisitionCase, persistAcquisitionDiligence, persistOfferAuthorization, persistOfferDraft, recordAcquisitionDecision, revokeOfferAuthorization } from "../../src/services/acquisition-repository";
 import { listBuyers, persistBuyerProfile } from "../../src/services/buyer-repository";
 import { getBuyerMatchStatus, persistBuyerMatchRun } from "../../src/services/buyer-match-repository";
 import {
@@ -134,7 +134,7 @@ async function accessActorFingerprint(request: Request, env: Env): Promise<strin
 async function handleApi(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
   if (url.pathname === "/api/health" && request.method === "GET") {
-    const persistence = Boolean(env.SUPABASE_URL && isModernSupabaseSecretKey(env.SUPABASE_SECRET_KEY));
+    const persistence = Boolean(env.SUPABASE_URL && env.SUPABASE_SECRET_KEY && isModernSupabaseSecretKey(env.SUPABASE_SECRET_KEY));
     return json({
       ok: true,
       service: "gns-success-wholesale-engine",
@@ -311,6 +311,49 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
       return json({ authorization, offerGenerated: false, documentGenerated: false, offerSent: false, outreachInitiated: false }, 201);
     } catch (error) {
       if (error instanceof SupabaseFeatureUnavailableError) return json({ error: "Apply the Phase 3 milestone 3 offer-authorization migration before revoking authorization." }, 409);
+      throw error;
+    }
+  }
+  if (url.pathname === "/api/seller/inquiries/offer-draft" && request.method === "GET") {
+    const config = supabaseConfig(env);
+    if (!config) return json({ draft: null, persistence: false });
+    const caseId = z.string().uuid().parse(url.searchParams.get("caseId"));
+    try {
+      return json({
+        draft: await getOfferDraft(config, caseId) ?? null,
+        persistence: true,
+        internalDraftPreparationAvailable: true,
+        sellerFacingApprovalAvailable: false,
+        signatureRequestAvailable: false,
+        deliveryAvailable: false,
+        outreachAvailable: false,
+      });
+    } catch (error) {
+      if (error instanceof SupabaseFeatureUnavailableError) return json({ draft: null, persistence: true, internalDraftPreparationAvailable: false }, 409);
+      throw error;
+    }
+  }
+  if (url.pathname === "/api/seller/inquiries/offer-draft" && request.method === "POST") {
+    const config = supabaseConfig(env);
+    if (!config) return json({ error: "Supabase persistence is required for internal offer-draft preparation." }, 503);
+    const input = offerDraftInputSchema.parse(JSON.parse(await parseBoundedText(request, 16_384)));
+    const preparerFingerprint = await accessActorFingerprint(request, env);
+    if (!preparerFingerprint) return json({ error: "A verified Cloudflare Access identity is required for internal draft preparation." }, 403);
+    try {
+      const [status, diligence, authorization] = await Promise.all([
+        getAcquisitionCase(config, input.inquiryId), getAcquisitionDiligence(config, input.caseId), getOfferAuthorization(config, input.caseId),
+      ]);
+      if (!status || status.caseId !== input.caseId) return json({ error: "Acquisition case was not found." }, 404);
+      const now = new Date();
+      const gate = evaluateOfferDraftGate(status, diligence, authorization, input, now);
+      if (!gate.allowed) return json({ error: `Internal offer-draft preparation was denied: ${gate.reasonCodes.join(", ")}.`, gate }, 422);
+      const draft = await persistOfferDraft(config, crypto.randomUUID(), input, gate, preparerFingerprint, now.toISOString());
+      return json({
+        draft, gate, documentPrepared: true, sellerFacingApproved: false,
+        signatureRequested: false, deliveryInitiated: false, outreachInitiated: false,
+      }, 201);
+    } catch (error) {
+      if (error instanceof SupabaseFeatureUnavailableError) return json({ error: "Apply the Phase 3 milestone 4 internal-draft migration before preparing a draft." }, 409);
       throw error;
     }
   }

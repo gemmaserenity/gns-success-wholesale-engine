@@ -73,6 +73,10 @@ An advanced acquisition case now exposes a private 13-part diligence workspace. 
 
 The private acquisition workflow now records an expiring, revocable human authorization or decline for bounded internal terms against the exact latest ready diligence evidence. Actor identity is derived from Cloudflare Access and stored as a one-way fingerprint; PostgreSQL independently rechecks evidence linkage, economics, timing, and duplicate-active-authority controls. This milestone still cannot generate a document, create a signature request, send an offer, call a provider, or initiate outreach. Apply `202608240003_phase3_offer_authorization.sql`; see [`docs/PHASE-3-MILESTONE-3.md`](docs/PHASE-3-MILESTONE-3.md) and the [`completion note`](docs/PHASE-3-MILESTONE-3-COMPLETION.md).
 
+## Phase 3 operational milestone 4
+
+The private acquisition workflow can now prepare an immutable, versioned internal offer-terms draft from the exact current authorization. PostgreSQL assembles the snapshot from canonical seller and authorization records, computes its SHA-256, and preserves each revision. The record is not an approved seller-facing offer, contract, or disclosure; no file export, signature request, delivery, provider, or outreach action exists. Apply `202608240004_phase3_internal_offer_drafts.sql`; see [`docs/PHASE-3-MILESTONE-4.md`](docs/PHASE-3-MILESTONE-4.md).
+
 ## Phase 1 foundation
 
 The repository now contains an operational Arizona trustee-sale screening slice:

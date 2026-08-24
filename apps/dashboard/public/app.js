@@ -625,7 +625,8 @@ function renderOfferAuthorizationWorkspace(acquisitionCase, diligence, authoriza
   const commonData = `data-case-id="${escapeHtml(acquisitionCase.caseId)}" data-inquiry-id="${escapeHtml(acquisitionCase.inquiryId)}" data-diligence-id="${escapeHtml(diligence.reviewId)}" data-evaluation-id="${escapeHtml(acquisitionCase.evaluation.evaluationId)}" data-buyer-run-id="${escapeHtml(acquisitionCase.buyerDemand.runId)}" data-decision-id="${escapeHtml(acquisitionCase.decision.decisionId)}"`;
   const latest = authorization ? `<div class="offer-authorization-status status-${authorization.effectiveStatus.toLowerCase()}"><p class="eyebrow">LATEST APPEND-ONLY AUTHORIZATION</p><strong>${escapeHtml(authorization.effectiveStatus)}</strong><p>${escapeHtml(authorization.rationale)}</p><small>${escapeHtml(authorization.authorizerRole.replaceAll("_", " "))} · actor ${escapeHtml(authorization.authorizerFingerprint.slice(0, 12))}… · ${escapeHtml(new Date(authorization.authorizedAt).toLocaleString())}${authorization.expiresAt ? ` · expires ${escapeHtml(new Date(authorization.expiresAt).toLocaleString())}` : ""}</small>${authorization.terms ? `<div class="acquisition-summary"><div><span>Purchase ceiling</span><strong>${money.format(authorization.terms.purchasePriceCents / 100)}</strong></div><div><span>Assignment target</span><strong>${money.format(authorization.terms.assignmentFeeTargetCents / 100)}</strong></div><div><span>Earnest money</span><strong>${money.format(authorization.terms.earnestMoneyCents / 100)}</strong></div><div><span>Inspection / close</span><strong>${authorization.terms.inspectionPeriodDays} / ${authorization.terms.closingPeriodDays} days</strong></div></div>` : ""}</div>` : "";
   if (authorization?.effectiveStatus === "AUTHORIZED") {
-    return `<div class="acquisition-boundary"><strong>Internal authority only.</strong> No offer or document exists, nothing can be sent, and no outreach is permitted.</div>${latest}
+    return `<div class="acquisition-boundary"><strong>Internal authority only.</strong> A controlled internal draft may be prepared, but it is not approved for delivery and cannot be signed or sent.</div>${latest}
+      <section class="offer-draft-workspace" data-case-id="${escapeHtml(acquisitionCase.caseId)}"><p class="loading">Loading internal draft…</p></section>
       <form class="offer-authorization-revocation-form guarded-form" data-case-id="${escapeHtml(acquisitionCase.caseId)}" data-authorization-id="${escapeHtml(authorization.authorizationId)}">
         <label>Revocation reason<textarea name="reason" required minlength="20" maxlength="1000" rows="3"></textarea></label>
         <label class="check-row"><input name="internalAuthorizationOnly" type="checkbox" required> Revoke only the internal authorization.</label>
@@ -655,13 +656,41 @@ function renderOfferAuthorizationWorkspace(acquisitionCase, diligence, authoriza
     </div>`;
 }
 
+function renderOfferDraftWorkspace(acquisitionCase, authorization, draft) {
+  const prior = draft ? `<div class="offer-draft-preview"><p class="eyebrow">LATEST IMMUTABLE INTERNAL DRAFT · REVISION ${draft.revisionNumber}</p><h4>${escapeHtml(draft.content.title)}</h4><p><strong>${escapeHtml(draft.content.classification.replaceAll("_", " "))}</strong> · ${escapeHtml(draft.effectiveStatus.replaceAll("_", " "))}</p><p>${escapeHtml(draft.content.notice)}</p><div class="acquisition-summary"><div><span>Seller</span><strong>${escapeHtml(draft.content.sellerName)}</strong></div><div><span>Property</span><strong>${escapeHtml(draft.content.propertyAddress)}</strong></div><div><span>Purchase ceiling</span><strong>${money.format(draft.content.terms.purchasePriceCents / 100)}</strong></div><div><span>Assignment target</span><strong>${money.format(draft.content.terms.assignmentFeeTargetCents / 100)}</strong></div><div><span>Earnest money</span><strong>${money.format(draft.content.terms.earnestMoneyCents / 100)}</strong></div><div><span>Inspection / close</span><strong>${draft.content.terms.inspectionPeriodDays} / ${draft.content.terms.closingPeriodDays} days</strong></div></div><p><strong>Preparation notes:</strong> ${escapeHtml(draft.preparationNotes)}</p><small>Template ${escapeHtml(draft.templateVersion)} · SHA-256 ${escapeHtml(draft.contentSha256)} · actor ${escapeHtml(draft.preparerFingerprint.slice(0, 12))}… · ${escapeHtml(new Date(draft.preparedAt).toLocaleString())}</small><p class="buyer-detail"><strong>Required next reviews:</strong> ${escapeHtml(draft.content.requiredNextReview.map((item) => item.replaceAll("_", " ")).join(" · "))}</p></div>` : "";
+  return `${prior}<div class="acquisition-boundary"><strong>Draft-only control.</strong> PostgreSQL assembles and hashes this internal snapshot from the current authorization. The browser cannot supply its content, and no download, signature, delivery, or outreach action exists.</div>
+    <form class="offer-draft-form guarded-form" data-case-id="${escapeHtml(acquisitionCase.caseId)}" data-inquiry-id="${escapeHtml(acquisitionCase.inquiryId)}" data-authorization-id="${escapeHtml(authorization.authorizationId)}">
+      <div class="seller-ai-form-grid"><label>Preparer role<select name="preparerRole"><option value="ACQUISITIONS_MANAGER">Acquisitions manager</option><option value="PRINCIPAL">Principal</option></select></label><label class="full">Preparation notes<textarea name="preparationNotes" required minlength="30" maxlength="2000" rows="3" placeholder="State why this internal revision is being prepared and what must be reviewed next."></textarea></label></div>
+      <label class="check-row"><input name="exactAuthorizationReconfirmed" type="checkbox" required> I reconfirmed the exact current authorization and its expiry.</label>
+      <label class="check-row"><input name="internalDraftOnly" type="checkbox" required> This is an internal draft only and is not approved for seller delivery.</label>
+      <label class="check-row"><input name="legalReviewRequired" type="checkbox" required> Approved legal language and wholesale disclosure review are still required.</label>
+      <label class="check-row"><input name="noSignatureRequested" type="checkbox" required> No signature request will be created.</label>
+      <label class="check-row"><input name="noDeliveryInitiated" type="checkbox" required> No document or terms will be delivered.</label>
+      <label class="check-row"><input name="noOutreachInitiated" type="checkbox" required> No seller or buyer outreach will be initiated.</label>
+      <button class="primary" type="submit">Prepare immutable internal draft</button><div class="offer-draft-feedback" aria-live="polite"></div>
+    </form>`;
+}
+
+async function loadOfferDraftWorkspace(workspace, acquisitionCase, authorization, message = "") {
+  workspace.innerHTML = '<p class="loading">Loading internal draft…</p>';
+  try {
+    const body = await send(`/api/seller/inquiries/offer-draft?${new URLSearchParams({ caseId: acquisitionCase.caseId })}`, {});
+    if (body.internalDraftPreparationAvailable === false) workspace.innerHTML = '<div class="empty">Apply the Phase 3 milestone 4 internal-draft migration before preparing a draft.</div>';
+    else workspace.innerHTML = `${message ? `<div class="success-message">${escapeHtml(message)}</div>` : ""}${renderOfferDraftWorkspace(acquisitionCase, authorization, body.draft)}`;
+  } catch (error) { workspace.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`; }
+}
+
 async function loadOfferAuthorizationWorkspace(workspace, acquisitionCase, diligence, message = "") {
   workspace.innerHTML = '<p class="loading">Loading internal authorization…</p>';
   try {
     const params = new URLSearchParams({ caseId: acquisitionCase.caseId });
     const body = await send(`/api/seller/inquiries/offer-authorization?${params}`, {});
     if (body.offerAuthorizationAvailable === false) workspace.innerHTML = '<div class="empty">Apply the Phase 3 milestone 3 offer-authorization migration before recording a decision.</div>';
-    else workspace.innerHTML = `${message ? `<div class="success-message">${escapeHtml(message)}</div>` : ""}${renderOfferAuthorizationWorkspace(acquisitionCase, diligence, body.authorization)}`;
+    else {
+      workspace.innerHTML = `${message ? `<div class="success-message">${escapeHtml(message)}</div>` : ""}${renderOfferAuthorizationWorkspace(acquisitionCase, diligence, body.authorization)}`;
+      const draftWorkspace = workspace.querySelector(".offer-draft-workspace");
+      if (draftWorkspace && body.authorization) await loadOfferDraftWorkspace(draftWorkspace, acquisitionCase, body.authorization);
+    }
   } catch (error) { workspace.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`; }
 }
 
@@ -817,6 +846,26 @@ $("#seller-inquiry-list").addEventListener("submit", async (event) => {
     const data = Object.fromEntries(new FormData(form));
     const body = await send("/api/seller/inquiries/offer-authorization/revoke", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseId: form.dataset.caseId, authorizationId: form.dataset.authorizationId, reason: data.reason, internalAuthorizationOnly: data.internalAuthorizationOnly === "on", noOfferGenerated: data.noOfferGenerated === "on", noOutreachInitiated: data.noOutreachInitiated === "on" }) });
     await loadAcquisitionWorkspace(form.closest(".seller-acquisition-workspace"), `${body.authorization.effectiveStatus} recorded. Internal authority was revoked without generating or sending an offer.`);
+  } catch (error) { feedback.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`; button.disabled = false; }
+});
+
+$("#seller-inquiry-list").addEventListener("submit", async (event) => {
+  const form = event.target.closest(".offer-draft-form");
+  if (!form) return;
+  event.preventDefault();
+  const button = event.submitter; const feedback = form.querySelector(".offer-draft-feedback");
+  button.disabled = true; feedback.innerHTML = "";
+  try {
+    const data = Object.fromEntries(new FormData(form));
+    const body = await send("/api/seller/inquiries/offer-draft", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+      caseId: form.dataset.caseId, inquiryId: form.dataset.inquiryId, authorizationId: form.dataset.authorizationId,
+      templateVersion: "internal-offer-terms-v1", preparerRole: data.preparerRole, preparationNotes: data.preparationNotes,
+      exactAuthorizationReconfirmed: data.exactAuthorizationReconfirmed === "on", internalDraftOnly: data.internalDraftOnly === "on",
+      legalReviewRequired: data.legalReviewRequired === "on", sellerFacingApproved: false,
+      noSignatureRequested: data.noSignatureRequested === "on", noDeliveryInitiated: data.noDeliveryInitiated === "on",
+      noOutreachInitiated: data.noOutreachInitiated === "on",
+    }) });
+    await loadOfferDraftWorkspace(form.closest(".offer-draft-workspace"), { caseId: form.dataset.caseId, inquiryId: form.dataset.inquiryId }, { authorizationId: form.dataset.authorizationId }, `Internal draft revision ${body.draft.revisionNumber} prepared. It was not signed, delivered, or sent.`);
   } catch (error) { feedback.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`; button.disabled = false; }
 });
 

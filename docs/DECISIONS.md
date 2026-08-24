@@ -173,3 +173,13 @@ The private Worker hashes the Cloudflare Access authenticated email and sends on
 ### Internal authorization does not create an offer
 
 The approved values are ceilings and operational limits, not seller-facing language. There is no template engine, document storage, signature integration, delivery action, provider call, or outreach route. Adding any of those is a separately authorized milestone.
+
+## 2026-08-23 — Phase 3 controlled internal offer-draft milestone
+
+### The database owns draft content
+
+The browser never supplies the seller name, property address, terms, expiry, fixed notice, or document body. PostgreSQL reads the current inquiry and authorization, constructs `internal-offer-terms-v1`, assigns the next append-only revision, and computes the content SHA-256. This prevents client-side substitutions and preserves a verifiable snapshot.
+
+### Internal preparation does not authorize release
+
+The draft is classified not for delivery and explicitly requires an approved legal template, approved wholesale disclosure, and final human release. It is not an Arizona purchase contract or approved seller-facing offer. The application exposes no file download, signature request, delivery, provider, or outreach action.

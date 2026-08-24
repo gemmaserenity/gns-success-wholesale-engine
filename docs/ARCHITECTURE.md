@@ -58,6 +58,8 @@ Phase 3 milestone 2 adds an immutable diligence ledger after an advance decision
 
 Phase 3 milestone 3 records the next human control without crossing into offer production. A verified Cloudflare Access identity is reduced to a SHA-256 fingerprint inside the private Worker; the browser cannot supply or override it. A role-attested acquisitions manager or principal may authorize bounded internal terms or decline against the exact latest ready diligence snapshot. Purchase price, assignment target, earnest money, inspection/closing periods, and a 24/48/72-hour validity period are constrained by the current base underwriting. PostgreSQL independently rechecks evidence linkage and economics. Authorizations, declines, and revocations are append-only, and the current projection becomes stale or expired automatically. No document, signature, delivery, provider, or outreach component exists.
 
+Phase 3 milestone 4 adds an internal document-preparation boundary without seller-facing release. A current, unexpired authorization may create an immutable `internal-offer-terms-v1` snapshot. The browser supplies only control attestations, role, and preparation notes; PostgreSQL assembles seller identity, property address, terms, expiry, fixed classification, fixed notice, and required next reviews from canonical records. Each revision receives a database-computed SHA-256 content fingerprint. The private UI can inspect the record but exposes no file export, signature, delivery, provider, or outreach action.
+
 ### GitHub
 
 GitHub is the canonical source repository and deployment history.

@@ -14,6 +14,8 @@ export const diligenceReadinessStatuses = ["NEEDS_RESEARCH", "BLOCKED", "READY_F
 export const offerAuthorizationDecisions = ["AUTHORIZE_INTERNAL_TERMS", "DECLINE_AUTHORIZATION"] as const;
 export const offerAuthorizationRoles = ["ACQUISITIONS_MANAGER", "PRINCIPAL"] as const;
 export const offerAuthorizationStatuses = ["AUTHORIZED", "DECLINED", "REVOKED", "EXPIRED", "STALE"] as const;
+export const offerDraftTemplateVersions = ["internal-offer-terms-v1"] as const;
+export const offerDraftStatuses = ["CURRENT", "AUTHORIZATION_EXPIRED", "AUTHORIZATION_REVOKED", "AUTHORIZATION_STALE"] as const;
 
 export type OwnerIdentityStatus = typeof ownerIdentityStatuses[number];
 export type SellerAuthorityStatus = typeof sellerAuthorityStatuses[number];
@@ -24,6 +26,8 @@ export type DiligenceReadinessStatus = typeof diligenceReadinessStatuses[number]
 export type OfferAuthorizationDecision = typeof offerAuthorizationDecisions[number];
 export type OfferAuthorizationRole = typeof offerAuthorizationRoles[number];
 export type OfferAuthorizationStatus = typeof offerAuthorizationStatuses[number];
+export type OfferDraftTemplateVersion = typeof offerDraftTemplateVersions[number];
+export type OfferDraftStatus = typeof offerDraftStatuses[number];
 
 export interface AcquisitionResearchInput {
   inquiryId: string;
@@ -178,6 +182,51 @@ export interface OfferAuthorizationRevocationInput {
   internalAuthorizationOnly: true;
   noOfferGenerated: true;
   noOutreachInitiated: true;
+}
+
+export interface OfferDraftInput {
+  caseId: string;
+  inquiryId: string;
+  authorizationId: string;
+  templateVersion: OfferDraftTemplateVersion;
+  preparerRole: OfferAuthorizationRole;
+  preparationNotes: string;
+  exactAuthorizationReconfirmed: true;
+  internalDraftOnly: true;
+  legalReviewRequired: true;
+  sellerFacingApproved: false;
+  noSignatureRequested: true;
+  noDeliveryInitiated: true;
+  noOutreachInitiated: true;
+}
+
+export interface OfferDraftGate extends AcquisitionDecisionGate {}
+
+export interface OfferDraftContent {
+  templateVersion: OfferDraftTemplateVersion;
+  classification: "INTERNAL_DRAFT_NOT_FOR_DELIVERY";
+  title: "Internal Offer Terms Draft";
+  sellerName: string;
+  propertyAddress: string;
+  terms: OfferTermLimits;
+  authorizationExpiresAt: string;
+  notice: "Not an offer, contract, disclosure, signature instrument, or permission to contact the seller.";
+  requiredNextReview: ["APPROVED_LEGAL_TEMPLATE", "APPROVED_WHOLESALE_DISCLOSURE", "FINAL_HUMAN_RELEASE"];
+}
+
+export interface OfferDraftStatusRecord {
+  draftId: string;
+  caseId: string;
+  authorizationId: string;
+  revisionNumber: number;
+  templateVersion: OfferDraftTemplateVersion;
+  effectiveStatus: OfferDraftStatus;
+  preparerFingerprint: string;
+  preparerRole: OfferAuthorizationRole;
+  preparationNotes: string;
+  contentSha256: string;
+  content: OfferDraftContent;
+  preparedAt: string;
 }
 
 export interface AcquisitionCaseStatus {

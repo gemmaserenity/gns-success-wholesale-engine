@@ -47,6 +47,7 @@ After revenue validates the model, evaluate:
 - [x] first operational milestone: seller inquiry → verified property research → underwriting → buyer-demand evidence → human acquisition decision
 - [x] second operational milestone: immutable acquisition diligence → explicit blockers/open items → evidence-only readiness for a separate human offer-authorization step
 - [x] third operational milestone: expiring internal term authorization → append-only decline/revocation → no document generation, sending, or outreach
+- [x] fourth operational milestone: server-assembled immutable internal offer-terms draft → version/hash provenance → no seller-facing approval, signature, delivery, or outreach
 
 - premium property-data providers
 - premium AVM/comparable-sales data

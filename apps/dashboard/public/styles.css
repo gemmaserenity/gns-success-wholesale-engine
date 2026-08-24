@@ -372,6 +372,12 @@ label.check .field-caption { gap: 5px; }
 .offer-authorization-status.status-authorized { border-left-color: var(--green); }
 .offer-authorization-status p, .offer-authorization-status small { margin: 3px 0; }
 .offer-authorization-feedback { margin-top: 10px; }
+.offer-draft-workspace { display: grid; gap: 12px; padding: 14px; border: 1px solid var(--line); background: #fffdf9; }
+.offer-draft-preview { padding: 14px; border: 2px solid var(--amber); background: #faf6f1; overflow-wrap: anywhere; }
+.offer-draft-preview h4 { margin: 3px 0; color: var(--brown-strong); font: 600 19px Georgia, serif; }
+.offer-draft-preview p, .offer-draft-preview small { margin: 5px 0; }
+.offer-draft-form { padding-top: 4px; }
+.offer-draft-feedback { margin-top: 10px; }
 .seller-ai-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
 .seller-ai-heading p, .ai-privacy-note p { margin: 4px 0 0; color: var(--muted); font-size: 11px; }
 .seller-ai-content { display: grid; gap: 12px; margin-top: 12px; }

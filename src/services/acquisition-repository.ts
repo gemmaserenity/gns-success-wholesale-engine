@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { acquisitionDecisions, diligenceItemKinds, diligenceItemStatuses, diligenceReadinessStatuses, offerAuthorizationDecisions, offerAuthorizationRoles, offerAuthorizationStatuses, ownerIdentityStatuses, sellerAuthorityStatuses } from "../domain/acquisition/types";
-import type { AcquisitionCaseCommand, AcquisitionCaseStatus, AcquisitionDecisionGate, AcquisitionDecisionInput, AcquisitionDiligenceAssessment, AcquisitionDiligenceInput, AcquisitionDiligenceStatus, OfferAuthorizationGate, OfferAuthorizationInput, OfferAuthorizationRevocationInput, OfferAuthorizationStatusRecord } from "../domain/acquisition/types";
+import { acquisitionDecisions, diligenceItemKinds, diligenceItemStatuses, diligenceReadinessStatuses, offerAuthorizationDecisions, offerAuthorizationRoles, offerAuthorizationStatuses, offerDraftStatuses, offerDraftTemplateVersions, ownerIdentityStatuses, sellerAuthorityStatuses } from "../domain/acquisition/types";
+import type { AcquisitionCaseCommand, AcquisitionCaseStatus, AcquisitionDecisionGate, AcquisitionDecisionInput, AcquisitionDiligenceAssessment, AcquisitionDiligenceInput, AcquisitionDiligenceStatus, OfferAuthorizationGate, OfferAuthorizationInput, OfferAuthorizationRevocationInput, OfferAuthorizationStatusRecord, OfferDraftGate, OfferDraftInput, OfferDraftStatusRecord } from "../domain/acquisition/types";
 import { isModernSupabaseSecretKey, SupabaseFeatureUnavailableError, type SupabaseConfig } from "./supabase-repository";
 
 const scenarioSchema = z.object({
@@ -62,6 +62,25 @@ const offerAuthorizationRowSchema = z.object({
   authorizer_fingerprint: z.string().regex(/^[a-f0-9]{64}$/), authorizer_role: z.enum(offerAuthorizationRoles), rationale: z.string(),
   terms: offerTermsRowSchema.nullable(), authorized_at: z.string().datetime({ offset: true }), expires_at: z.string().datetime({ offset: true }).nullable(),
   revoked_at: z.string().datetime({ offset: true }).nullable(), revocation_reason: z.string().nullable(),
+});
+
+const offerDraftContentSchema = z.object({
+  templateVersion: z.enum(offerDraftTemplateVersions),
+  classification: z.literal("INTERNAL_DRAFT_NOT_FOR_DELIVERY"),
+  title: z.literal("Internal Offer Terms Draft"),
+  sellerName: z.string(), propertyAddress: z.string(), terms: offerTermsRowSchema,
+  authorizationExpiresAt: z.string().datetime({ offset: true }),
+  notice: z.literal("Not an offer, contract, disclosure, signature instrument, or permission to contact the seller."),
+  requiredNextReview: z.tuple([z.literal("APPROVED_LEGAL_TEMPLATE"), z.literal("APPROVED_WHOLESALE_DISCLOSURE"), z.literal("FINAL_HUMAN_RELEASE")]),
+});
+
+const offerDraftRowSchema = z.object({
+  draft_id: z.string().uuid(), case_id: z.string().uuid(), authorization_id: z.string().uuid(),
+  revision_number: z.number().int().positive(), template_version: z.enum(offerDraftTemplateVersions),
+  effective_status: z.enum(offerDraftStatuses), preparer_fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
+  preparer_role: z.enum(offerAuthorizationRoles), preparation_notes: z.string(),
+  content_sha256: z.string().regex(/^[a-f0-9]{64}$/), content: offerDraftContentSchema,
+  prepared_at: z.string().datetime({ offset: true }),
 });
 
 function headers(config: SupabaseConfig): HeadersInit {
@@ -225,5 +244,43 @@ export async function revokeOfferAuthorization(
   await readJson(response, "seller offer-authorization revocation");
   const status = await getOfferAuthorization(config, input.caseId);
   if (!status) throw new Error("Revoked seller offer authorization was not found");
+  return status;
+}
+
+function mapOfferDraftRow(row: z.infer<typeof offerDraftRowSchema>): OfferDraftStatusRecord {
+  return {
+    draftId: row.draft_id, caseId: row.case_id, authorizationId: row.authorization_id,
+    revisionNumber: row.revision_number, templateVersion: row.template_version,
+    effectiveStatus: row.effective_status, preparerFingerprint: row.preparer_fingerprint,
+    preparerRole: row.preparer_role, preparationNotes: row.preparation_notes,
+    contentSha256: row.content_sha256, content: row.content, preparedAt: row.prepared_at,
+  };
+}
+
+export async function getOfferDraft(config: SupabaseConfig, caseId: string): Promise<OfferDraftStatusRecord | undefined> {
+  const params = new URLSearchParams({
+    select: "draft_id,case_id,authorization_id,revision_number,template_version,effective_status,preparer_fingerprint,preparer_role,preparation_notes,content_sha256,content,prepared_at",
+    case_id: `eq.${caseId}`, limit: "1",
+  });
+  const response = await fetch(`${config.url}/rest/v1/current_seller_offer_drafts?${params}`, { headers: headers(config) });
+  const rows = z.array(offerDraftRowSchema).parse(await readJson(response, "seller offer-draft lookup"));
+  return rows[0] ? mapOfferDraftRow(rows[0]) : undefined;
+}
+
+export async function persistOfferDraft(
+  config: SupabaseConfig,
+  draftId: string,
+  input: OfferDraftInput,
+  gate: OfferDraftGate,
+  preparerFingerprint: string,
+  preparedAt: string,
+): Promise<OfferDraftStatusRecord> {
+  const response = await fetch(`${config.url}/rest/v1/rpc/record_seller_offer_draft`, {
+    method: "POST", headers: headers(config),
+    body: JSON.stringify({ p_draft: { draftId, ...input, gateReasonCodes: gate.reasonCodes, preparerFingerprint, preparedAt } }),
+  });
+  await readJson(response, "seller offer-draft persistence");
+  const status = await getOfferDraft(config, input.caseId);
+  if (!status) throw new Error("Persisted seller offer draft was not found");
   return status;
 }

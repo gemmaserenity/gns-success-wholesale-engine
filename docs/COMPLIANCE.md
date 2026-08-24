@@ -31,6 +31,8 @@ Acquisition diligence is also decision support. Each review preserves an immutab
 
 An internal term authorization is not an offer to a seller. It records a human's bounded internal authority against the latest ready diligence, expires within 72 hours, and becomes stale when underlying evidence changes. Authorization requires renewed material-fact and wholesale-disclosure attestations. Decline and revocation are append-only. The Access identity is stored as a one-way fingerprint rather than an email address; the selected acquisitions-manager or principal role is an explicit attestation and does not replace centrally managed role assignment. No milestone 3 action changes consent, authorizes a communication channel, produces a contract or disclosure, creates a signature request, or sends anything.
 
+An internal offer-terms draft remains an operational control record, not a seller-facing offer, Arizona purchase contract, approved disclosure, or legal instrument. PostgreSQL assembles the draft from the current authorization and immutable inquiry so the browser cannot substitute identity, property, terms, expiry, or notices. Every revision is append-only and content-hashed. The fixed classification requires legal-template, wholesale-disclosure, and final human-release review. Milestone 4 provides no PDF/download, signature, delivery, provider, or outreach capability and does not change consent or contact standing.
+
 Arizona-specific wholesale transaction requirements should be versioned and configurable.
 
 This documentation is operational guidance and not a substitute for legal advice.
