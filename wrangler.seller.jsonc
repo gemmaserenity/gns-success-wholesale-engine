@@ -27,8 +27,8 @@
     }
   ],
   "vars": {
-    "CALCOM_EVENT_TYPE_ID": "",
-    "CALCOM_SELLER_BOOKING_URL": "",
-    "RESEND_FROM_EMAIL": "GNS Success <offers@gns-success.com>"
+    "CALCOM_EVENT_TYPE_ID": "6772856",
+    "CALCOM_SELLER_BOOKING_URL": "https://cal.com/gns-success/30min",
+    "RESEND_FROM_EMAIL": "GNS Success <seller-portal@gns-success.com>"
   }
 }
