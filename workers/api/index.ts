@@ -1,7 +1,7 @@
 import { z, ZodError } from "zod";
 import { TrusteeSaleCsvAdapter } from "../../src/adapters/csv/csv-adapter";
 import { acquisitionDecisionInputSchema, acquisitionDiligenceInputSchema, acquisitionResearchInputSchema, offerAuthorizationInputSchema, offerAuthorizationRevocationInputSchema, offerDraftInputSchema } from "../../src/domain/acquisition/schema";
-import { assessAcquisitionDiligence, buildSellerAcquisitionLead, evaluateAcquisitionDecisionGate, evaluateDiligenceEntryGate, evaluateOfferAuthorizationGate, evaluateOfferDraftGate } from "../../src/domain/acquisition/workflow";
+import { assessAcquisitionDiligence, buildSellerAcquisitionLead, evaluateAcquisitionDecisionGate, evaluateDiligenceEntryGate, evaluateDocumentReleasePreparationGate, evaluateOfferAuthorizationGate, evaluateOfferDraftGate } from "../../src/domain/acquisition/workflow";
 import { buyerProfileInputSchema } from "../../src/domain/buyers/schema";
 import {
   analyzeBuyerDemand,
@@ -27,7 +27,7 @@ import { normalizeApn, normalizeCounty } from "../../src/domain/opportunities/no
 import { counties, pipelineStates } from "../../src/domain/opportunities/types";
 import type { County, PipelineState } from "../../src/domain/opportunities/types";
 import { evaluateOpportunity } from "../../src/services/evaluate-opportunity";
-import { getAcquisitionCase, getAcquisitionDiligence, getOfferAuthorization, getOfferDraft, persistAcquisitionCase, persistAcquisitionDiligence, persistOfferAuthorization, persistOfferDraft, recordAcquisitionDecision, revokeOfferAuthorization } from "../../src/services/acquisition-repository";
+import { getAcquisitionCase, getAcquisitionDiligence, getDocumentReleaseGovernance, getOfferAuthorization, getOfferDraft, persistAcquisitionCase, persistAcquisitionDiligence, persistOfferAuthorization, persistOfferDraft, recordAcquisitionDecision, revokeOfferAuthorization } from "../../src/services/acquisition-repository";
 import { listBuyers, persistBuyerProfile } from "../../src/services/buyer-repository";
 import { getBuyerMatchStatus, persistBuyerMatchRun } from "../../src/services/buyer-match-repository";
 import {
@@ -354,6 +354,23 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
       }, 201);
     } catch (error) {
       if (error instanceof SupabaseFeatureUnavailableError) return json({ error: "Apply the Phase 3 milestone 4 internal-draft migration before preparing a draft." }, 409);
+      throw error;
+    }
+  }
+  if (url.pathname === "/api/seller/inquiries/document-release" && request.method === "GET") {
+    const config = supabaseConfig(env);
+    if (!config) return json({ governance: null, persistence: false, sellerFacingGenerationAvailable: false, signatureRequestAvailable: false, deliveryAvailable: false, outreachAvailable: false });
+    const caseId = z.string().uuid().parse(url.searchParams.get("caseId"));
+    const actorFingerprint = await accessActorFingerprint(request, env);
+    if (!actorFingerprint) return json({ error: "A verified Cloudflare Access identity is required for document-release governance." }, 403);
+    try {
+      const governance = await getDocumentReleaseGovernance(config, caseId, actorFingerprint);
+      return json({ governance, preparationGate: evaluateDocumentReleasePreparationGate(governance) });
+    } catch (error) {
+      if (error instanceof SupabaseFeatureUnavailableError) return json({
+        governance: null, persistence: true, documentReleaseGovernanceAvailable: false,
+        sellerFacingGenerationAvailable: false, signatureRequestAvailable: false, deliveryAvailable: false, outreachAvailable: false,
+      }, 409);
       throw error;
     }
   }

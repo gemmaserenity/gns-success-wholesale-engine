@@ -183,3 +183,17 @@ The browser never supplies the seller name, property address, terms, expiry, fix
 ### Internal preparation does not authorize release
 
 The draft is classified not for delivery and explicitly requires an approved legal template, approved wholesale disclosure, and final human release. It is not an Arizona purchase contract or approved seller-facing offer. The application exposes no file download, signature request, delivery, provider, or outreach action.
+
+## 2026-08-24 — Phase 3 seller-document release governance
+
+### Release authority is centrally administered
+
+Release capabilities come from append-only permission events keyed to the Worker-derived Access fingerprint. A browser-selected role cannot grant preparation, approval, revocation, signature, or delivery authority.
+
+### Absence of legal approval is a hard stop
+
+Contract and Arizona wholesale-disclosure versions require exact hashes and append-only approval evidence. The migration creates the governance structure but seeds no artifact or approval. Production therefore remains closed rather than treating placeholder or internal text as approved.
+
+### Preparation, decision, signature, and delivery are distinct
+
+Release manifests, final human approval/rejection/revocation, signature evidence, and delivery evidence use separate append-only ledgers with provenance, retention, and idempotency. The private Worker exposes read-only governance only and has no provider binding or mutation capability for signature or delivery.

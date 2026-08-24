@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { acquisitionDecisions, diligenceItemKinds, diligenceItemStatuses, diligenceReadinessStatuses, offerAuthorizationDecisions, offerAuthorizationRoles, offerAuthorizationStatuses, offerDraftStatuses, offerDraftTemplateVersions, ownerIdentityStatuses, sellerAuthorityStatuses } from "../domain/acquisition/types";
-import type { AcquisitionCaseCommand, AcquisitionCaseStatus, AcquisitionDecisionGate, AcquisitionDecisionInput, AcquisitionDiligenceAssessment, AcquisitionDiligenceInput, AcquisitionDiligenceStatus, OfferAuthorizationGate, OfferAuthorizationInput, OfferAuthorizationRevocationInput, OfferAuthorizationStatusRecord, OfferDraftGate, OfferDraftInput, OfferDraftStatusRecord } from "../domain/acquisition/types";
+import { acquisitionDecisions, diligenceItemKinds, diligenceItemStatuses, diligenceReadinessStatuses, documentReleaseStatuses, offerAuthorizationDecisions, offerAuthorizationRoles, offerAuthorizationStatuses, offerDraftStatuses, offerDraftTemplateVersions, ownerIdentityStatuses, sellerAuthorityStatuses } from "../domain/acquisition/types";
+import type { AcquisitionCaseCommand, AcquisitionCaseStatus, AcquisitionDecisionGate, AcquisitionDecisionInput, AcquisitionDiligenceAssessment, AcquisitionDiligenceInput, AcquisitionDiligenceStatus, DocumentReleaseGovernanceStatus, OfferAuthorizationGate, OfferAuthorizationInput, OfferAuthorizationRevocationInput, OfferAuthorizationStatusRecord, OfferDraftGate, OfferDraftInput, OfferDraftStatusRecord } from "../domain/acquisition/types";
 import { isModernSupabaseSecretKey, SupabaseFeatureUnavailableError, type SupabaseConfig } from "./supabase-repository";
 
 const scenarioSchema = z.object({
@@ -81,6 +81,28 @@ const offerDraftRowSchema = z.object({
   preparer_role: z.enum(offerAuthorizationRoles), preparation_notes: z.string(),
   content_sha256: z.string().regex(/^[a-f0-9]{64}$/), content: offerDraftContentSchema,
   prepared_at: z.string().datetime({ offset: true }),
+});
+
+const documentReleaseRowSchema = z.object({
+  release_package_id: z.string().uuid(), case_id: z.string().uuid(), draft_id: z.string().uuid(),
+  draft_content_sha256: z.string().regex(/^[a-f0-9]{64}$/), draft_template_version: z.enum(offerDraftTemplateVersions),
+  contract_version: z.string(), contract_content_sha256: z.string().regex(/^[a-f0-9]{64}$/),
+  disclosure_version: z.string(), disclosure_content_sha256: z.string().regex(/^[a-f0-9]{64}$/),
+  release_manifest_sha256: z.string().regex(/^[a-f0-9]{64}$/), preparer_fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
+  intended_delivery_channel: z.literal("EMAIL"), consent_statement_version: z.string(),
+  retention_until: z.string().datetime({ offset: true }), prepared_at: z.string().datetime({ offset: true }),
+  effective_status: z.enum(documentReleaseStatuses), decision: z.enum(["APPROVE", "REJECT"]).nullable(),
+  decided_at: z.string().datetime({ offset: true }).nullable(), revoked_at: z.string().datetime({ offset: true }).nullable(),
+  seller_facing_document_generated: z.literal(false), signature_request_available: z.literal(false), delivery_available: z.literal(false),
+}).passthrough();
+
+const documentReleaseGovernanceSchema = z.object({
+  caseId: z.string().uuid(), exactCurrentDraft: z.boolean(), draftId: z.string().uuid().nullable(),
+  draftContentSha256: z.string().regex(/^[a-f0-9]{64}$/).nullable(), currentAuthorization: z.boolean(),
+  approvedLegalTemplateAvailable: z.boolean(), approvedArizonaDisclosureAvailable: z.boolean(),
+  permissions: z.object({ prepare: z.boolean(), approve: z.boolean(), revoke: z.boolean() }),
+  release: documentReleaseRowSchema.nullable(), sellerFacingGenerationAvailable: z.literal(false),
+  signatureRequestAvailable: z.literal(false), deliveryAvailable: z.literal(false), providerConfigured: z.literal(false), outreachAvailable: z.literal(false).optional(),
 });
 
 function headers(config: SupabaseConfig): HeadersInit {
@@ -283,4 +305,34 @@ export async function persistOfferDraft(
   const status = await getOfferDraft(config, input.caseId);
   if (!status) throw new Error("Persisted seller offer draft was not found");
   return status;
+}
+
+export async function getDocumentReleaseGovernance(
+  config: SupabaseConfig,
+  caseId: string,
+  actorFingerprint: string,
+): Promise<DocumentReleaseGovernanceStatus> {
+  const response = await fetch(`${config.url}/rest/v1/rpc/get_seller_document_release_governance`, {
+    method: "POST", headers: headers(config), body: JSON.stringify({ p_case_id: caseId, p_actor_fingerprint: actorFingerprint }),
+  });
+  const row = documentReleaseGovernanceSchema.parse(await readJson(response, "seller document-release governance lookup"));
+  return {
+    caseId: row.caseId, exactCurrentDraft: row.exactCurrentDraft,
+    ...(row.draftId ? { draftId: row.draftId } : {}), ...(row.draftContentSha256 ? { draftContentSha256: row.draftContentSha256 } : {}),
+    currentAuthorization: row.currentAuthorization, approvedLegalTemplateAvailable: row.approvedLegalTemplateAvailable,
+    approvedArizonaDisclosureAvailable: row.approvedArizonaDisclosureAvailable, permissions: row.permissions,
+    ...(row.release ? { release: {
+      releasePackageId: row.release.release_package_id, caseId: row.release.case_id, draftId: row.release.draft_id,
+      draftContentSha256: row.release.draft_content_sha256, draftTemplateVersion: row.release.draft_template_version,
+      contractVersion: row.release.contract_version, contractContentSha256: row.release.contract_content_sha256,
+      disclosureVersion: row.release.disclosure_version, disclosureContentSha256: row.release.disclosure_content_sha256,
+      releaseManifestSha256: row.release.release_manifest_sha256, preparerFingerprint: row.release.preparer_fingerprint,
+      intendedDeliveryChannel: row.release.intended_delivery_channel, consentStatementVersion: row.release.consent_statement_version,
+      retentionUntil: row.release.retention_until, preparedAt: row.release.prepared_at, effectiveStatus: row.release.effective_status,
+      ...(row.release.decision ? { decision: row.release.decision } : {}), ...(row.release.decided_at ? { decidedAt: row.release.decided_at } : {}),
+      ...(row.release.revoked_at ? { revokedAt: row.release.revoked_at } : {}), sellerFacingDocumentGenerated: false,
+      signatureRequestAvailable: false, deliveryAvailable: false,
+    } } : {}),
+    sellerFacingGenerationAvailable: false, signatureRequestAvailable: false, deliveryAvailable: false, providerConfigured: false, outreachAvailable: false,
+  };
 }

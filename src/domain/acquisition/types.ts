@@ -16,6 +16,10 @@ export const offerAuthorizationRoles = ["ACQUISITIONS_MANAGER", "PRINCIPAL"] as 
 export const offerAuthorizationStatuses = ["AUTHORIZED", "DECLINED", "REVOKED", "EXPIRED", "STALE"] as const;
 export const offerDraftTemplateVersions = ["internal-offer-terms-v1"] as const;
 export const offerDraftStatuses = ["CURRENT", "AUTHORIZATION_EXPIRED", "AUTHORIZATION_REVOKED", "AUTHORIZATION_STALE"] as const;
+export const documentReleaseStatuses = [
+  "AWAITING_FINAL_HUMAN_DECISION", "APPROVED_FOR_CONTROLLED_RELEASE", "REJECTED", "REVOKED",
+  "AUTHORIZATION_INVALID", "DRAFT_INVALID", "LEGAL_TEMPLATE_INVALID", "DISCLOSURE_INVALID",
+] as const;
 
 export type OwnerIdentityStatus = typeof ownerIdentityStatuses[number];
 export type SellerAuthorityStatus = typeof sellerAuthorityStatuses[number];
@@ -28,6 +32,7 @@ export type OfferAuthorizationRole = typeof offerAuthorizationRoles[number];
 export type OfferAuthorizationStatus = typeof offerAuthorizationStatuses[number];
 export type OfferDraftTemplateVersion = typeof offerDraftTemplateVersions[number];
 export type OfferDraftStatus = typeof offerDraftStatuses[number];
+export type DocumentReleaseStatus = typeof documentReleaseStatuses[number];
 
 export interface AcquisitionResearchInput {
   inquiryId: string;
@@ -227,6 +232,48 @@ export interface OfferDraftStatusRecord {
   contentSha256: string;
   content: OfferDraftContent;
   preparedAt: string;
+}
+
+export interface DocumentReleaseRecord {
+  releasePackageId: string;
+  caseId: string;
+  draftId: string;
+  draftContentSha256: string;
+  draftTemplateVersion: OfferDraftTemplateVersion;
+  contractVersion: string;
+  contractContentSha256: string;
+  disclosureVersion: string;
+  disclosureContentSha256: string;
+  releaseManifestSha256: string;
+  preparerFingerprint: string;
+  intendedDeliveryChannel: "EMAIL";
+  consentStatementVersion: string;
+  retentionUntil: string;
+  preparedAt: string;
+  effectiveStatus: DocumentReleaseStatus;
+  decision?: "APPROVE" | "REJECT" | undefined;
+  decidedAt?: string | undefined;
+  revokedAt?: string | undefined;
+  sellerFacingDocumentGenerated: false;
+  signatureRequestAvailable: false;
+  deliveryAvailable: false;
+}
+
+export interface DocumentReleaseGovernanceStatus {
+  caseId: string;
+  exactCurrentDraft: boolean;
+  draftId?: string | undefined;
+  draftContentSha256?: string | undefined;
+  currentAuthorization: boolean;
+  approvedLegalTemplateAvailable: boolean;
+  approvedArizonaDisclosureAvailable: boolean;
+  permissions: { prepare: boolean; approve: boolean; revoke: boolean };
+  release?: DocumentReleaseRecord | undefined;
+  sellerFacingGenerationAvailable: false;
+  signatureRequestAvailable: false;
+  deliveryAvailable: false;
+  providerConfigured: false;
+  outreachAvailable: false;
 }
 
 export interface AcquisitionCaseStatus {

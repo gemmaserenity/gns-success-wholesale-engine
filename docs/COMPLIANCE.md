@@ -33,6 +33,8 @@ An internal term authorization is not an offer to a seller. It records a human's
 
 An internal offer-terms draft remains an operational control record, not a seller-facing offer, Arizona purchase contract, approved disclosure, or legal instrument. PostgreSQL assembles the draft from the current authorization and immutable inquiry so the browser cannot substitute identity, property, terms, expiry, or notices. Every revision is append-only and content-hashed. The fixed classification requires legal-template, wholesale-disclosure, and final human-release review. Milestone 4 provides no PDF/download, signature, delivery, provider, or outreach capability and does not change consent or contact standing.
 
+Seller-document release governance requires centrally administered permission evidence; browser role attestation is insufficient. Legal versions must carry exact hashes, approval evidence, jurisdiction, validity, and retention before they can satisfy a gate. Release controls bind the exact current internal-draft hash, authorization, seller/property/term revalidation, channel consent, and suppression standing. Preparation, final human approval/rejection/revocation, signature history, and delivery history are separate append-only records. No approved legal artifact is inferred or seeded, and the current Worker cannot generate, sign, deliver, contact, or call a provider.
+
 Arizona-specific wholesale transaction requirements should be versioned and configurable.
 
 This documentation is operational guidance and not a substitute for legal advice.

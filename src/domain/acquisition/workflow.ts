@@ -1,7 +1,7 @@
 import type { SellerInquiry } from "../seller-intake/types";
 import type { RawLeadInput } from "../opportunities/types";
 import { diligenceItemKinds } from "./types";
-import type { AcquisitionCaseStatus, AcquisitionDecisionGate, AcquisitionDecisionInput, AcquisitionDiligenceAssessment, AcquisitionDiligenceInput, AcquisitionDiligenceStatus, AcquisitionResearchInput, DiligenceItemKind, OfferAuthorizationGate, OfferAuthorizationInput, OfferAuthorizationStatusRecord, OfferDraftGate, OfferDraftInput } from "./types";
+import type { AcquisitionCaseStatus, AcquisitionDecisionGate, AcquisitionDecisionInput, AcquisitionDiligenceAssessment, AcquisitionDiligenceInput, AcquisitionDiligenceStatus, AcquisitionResearchInput, DiligenceItemKind, DocumentReleaseGovernanceStatus, OfferAuthorizationGate, OfferAuthorizationInput, OfferAuthorizationStatusRecord, OfferDraftGate, OfferDraftInput } from "./types";
 
 export function buildSellerAcquisitionLead(inquiry: SellerInquiry, research: AcquisitionResearchInput): RawLeadInput {
   return {
@@ -160,4 +160,17 @@ export function evaluateOfferDraftGate(
   if (!input.noDeliveryInitiated) reasonCodes.push("NO_DELIVERY_BOUNDARY_REQUIRED");
   if (!input.noOutreachInitiated) reasonCodes.push("NO_OUTREACH_BOUNDARY_REQUIRED");
   return { allowed: reasonCodes.length === 0, reasonCodes: reasonCodes.length ? reasonCodes : ["INTERNAL_DRAFT_PREPARATION_ALLOWED"] };
+}
+
+export function evaluateDocumentReleasePreparationGate(status: DocumentReleaseGovernanceStatus): AcquisitionDecisionGate {
+  const reasonCodes: string[] = [];
+  if (!status.exactCurrentDraft) reasonCodes.push("EXACT_CURRENT_DRAFT_REQUIRED");
+  if (!status.currentAuthorization) reasonCodes.push("CURRENT_AUTHORIZATION_REQUIRED");
+  if (!status.approvedLegalTemplateAvailable) reasonCodes.push("APPROVED_LEGAL_TEMPLATE_REQUIRED");
+  if (!status.approvedArizonaDisclosureAvailable) reasonCodes.push("APPROVED_ARIZONA_DISCLOSURE_REQUIRED");
+  if (!status.permissions.prepare) reasonCodes.push("CENTRAL_RELEASE_PREPARATION_PERMISSION_REQUIRED");
+  if (status.providerConfigured || status.sellerFacingGenerationAvailable || status.signatureRequestAvailable || status.deliveryAvailable || status.outreachAvailable) {
+    reasonCodes.push("PROVIDER_BOUNDARY_VIOLATION");
+  }
+  return { allowed: reasonCodes.length === 0, reasonCodes: reasonCodes.length ? reasonCodes : ["RELEASE_CONTROL_PACKAGE_PREPARATION_ALLOWED"] };
 }

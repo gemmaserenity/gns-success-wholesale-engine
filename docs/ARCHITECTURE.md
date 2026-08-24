@@ -60,6 +60,8 @@ Phase 3 milestone 3 records the next human control without crossing into offer p
 
 Phase 3 milestone 4 adds an internal document-preparation boundary without seller-facing release. A current, unexpired authorization may create an immutable `internal-offer-terms-v1` snapshot. The browser supplies only control attestations, role, and preparation notes; PostgreSQL assembles seller identity, property address, terms, expiry, fixed classification, fixed notice, and required next reviews from canonical records. Each revision receives a database-computed SHA-256 content fingerprint. The private UI can inspect the record but exposes no file export, signature, delivery, provider, or outreach action.
 
+Phase 3 milestone 5 adds provider-neutral seller-document governance. Centrally administered append-only capability events replace self-attested roles for release operations. Separate immutable ledgers hold legal-document versions and approval/rejection/revocation evidence, release-control manifests and final human decisions/revocations, and future signature/delivery evidence. Every manifest begins with the exact current Milestone 4 draft and binds its hash/template version to exact approved Arizona contract and wholesale-disclosure versions, revalidation hashes, consent/suppression controls, retention, and idempotency. Because no approved legal artifacts were supplied, no artifact is seeded and the private Worker exposes read-only blockers only; seller-facing generation, signature, delivery, providers, and outreach remain unavailable. The public Worker is unchanged.
+
 ### GitHub
 
 GitHub is the canonical source repository and deployment history.

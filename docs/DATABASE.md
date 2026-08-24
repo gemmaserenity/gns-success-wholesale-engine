@@ -100,3 +100,9 @@ Migration `202608240003_phase3_offer_authorization.sql` creates append-only `sel
 Migration `202608240004_phase3_internal_offer_drafts.sql` creates append-only `seller_offer_drafts`. Each revision links the exact current offer authorization, stores a server-derived Access actor fingerprint and role attestation, and retains preparation notes, `internal-offer-terms-v1` content, a PostgreSQL-computed SHA-256 content fingerprint, and false seller-facing/signature/delivery/outreach state.
 
 `record_seller_offer_draft(jsonb)` accepts no document body from the browser. It requires the latest authorization to remain `AUTHORIZED`, then assembles seller name, property address, exact authorized terms, expiry, fixed internal-only notice, and required next reviews from canonical records. `current_seller_offer_drafts` projects `CURRENT`, `AUTHORIZATION_EXPIRED`, `AUTHORIZATION_REVOKED`, or `AUTHORIZATION_STALE`. Service-role update and delete are revoked. There is no file, signature, delivery, provider, or communication function.
+
+## Phase 3 seller-document release governance
+
+Migration `202608240005_phase3_document_release_governance.sql` adds `seller_document_permission_events`, `seller_legal_document_versions`, `seller_legal_document_approval_events`, `seller_document_release_packages`, `seller_document_release_decisions`, `seller_document_release_revocations`, `seller_document_signature_events`, and `seller_document_delivery_events`. Current views project administered permissions, legal approval state, and release state.
+
+The service role can read governance and call only the minimized status function; it cannot insert central permissions, legal approvals, signature events, or delivery events and cannot update/delete any history. Release packages reserve exact draft/template/legal-version hashes, seller/property/terms hashes, consent/suppression revalidation, retention, provenance, and idempotency. No legal or provider rows are seeded.

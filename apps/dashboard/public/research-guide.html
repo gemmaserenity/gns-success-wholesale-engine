@@ -229,6 +229,18 @@
       </div>
 
       <div class="mapping-block">
+        <h4>Seller document release — evidence-only governance boundary</h4>
+        <div class="table-wrap"><table class="field-table"><thead><tr><th>Control</th><th>Authoritative source</th><th>Bind exactly this</th><th>Hard stop</th></tr></thead><tbody>
+          <tr><td><code>Current draft</code></td><td>Milestone 4 current-draft projection</td><td>Exact draft ID, `internal-offer-terms-v1`, and database SHA-256.</td><td>Expired, revoked, stale, or hash-mismatched drafts cannot proceed.</td></tr>
+          <tr><td><code>Legal versions</code></td><td>Centrally administered legal-artifact ledger</td><td>Exact Arizona contract and wholesale-disclosure versions, content hashes, validity, retention, and approval evidence.</td><td>No placeholder, internal draft, or undocumented approval counts.</td></tr>
+          <tr><td><code>Release permission</code></td><td>Central append-only capability events</td><td>Worker-derived Access actor fingerprint and current capability.</td><td>A browser-selected role cannot grant release authority.</td></tr>
+          <tr><td><code>Revalidation</code></td><td>Canonical inquiry, property, authorization, consent, and suppression records</td><td>Seller/property/term hashes plus current email consent and suppression evidence.</td><td>Changed identity, property, terms, consent, or suppression closes the gate.</td></tr>
+          <tr><td><code>Human decision</code></td><td>Separate append-only decision ledger</td><td>Explicit approval or rejection against the exact manifest hash; revocation is another event.</td><td>Preparation never implies approval.</td></tr>
+          <tr><td><code>Signature / delivery</code></td><td>Separate provider-neutral evidence ledgers</td><td>Document hashes, provider-reference hashes, provenance, retention, and idempotency.</td><td>No provider is configured; generation, envelope creation, delivery, and outreach are unavailable.</td></tr>
+        </tbody></table></div>
+      </div>
+
+      <div class="mapping-block">
         <h4>Buyer database — source is the buyer relationship, not property records</h4>
         <div class="table-wrap"><table class="field-table"><thead><tr><th>Buyer field</th><th>Find it here</th><th>Map exactly this</th><th>Do not</th></tr></thead><tbody>
           <tr><td><code>Buyer name / Company</code></td><td>Direct buyer intake, verified relationship, business records</td><td>Recognizable buyer name and acquisition entity.</td><td>Do not create a buyer from an unverified list alone.</td></tr>

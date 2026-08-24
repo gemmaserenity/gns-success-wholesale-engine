@@ -274,3 +274,22 @@ Deploy only the authenticated Worker. The public seller Worker remains unchanged
 9. Confirm Cloudflare Access still protects the private hostname and the unchanged public seller health endpoint remains healthy.
 
 Do not create a production draft merely to test deployment. Use schema inspection, a synthetic read, and the gated UI unless an approved synthetic case already exists.
+
+## Phase 3 seller-document release-governance milestone 5 deployment
+
+After the milestone 4 migration is registered, apply:
+
+```text
+supabase/migrations/202608240005_phase3_document_release_governance.sql
+```
+
+Deploy only the authenticated Worker. Do not deploy the public seller Worker. Then verify without creating records:
+
+1. All eight append-only governance tables and the three current views exist; the service role cannot update/delete history or insert central permissions, legal approvals, signature events, or delivery events.
+2. Confirm the migration seeded zero legal versions, legal approval events, central permissions, release packages, signature events, and delivery events.
+3. An authenticated synthetic GET to `/api/seller/inquiries/document-release?caseId=<UUID>` reports governance available and generation, signature, delivery, provider, and outreach capabilities false.
+4. A case with a current draft reports the exact draft SHA-256 but blocks on absent approved Arizona contract/disclosure versions and absent centrally administered permission.
+5. Cloudflare Access still protects the private hostname; no personal information appears in Worker logs.
+6. Confirm the public seller Worker deployment and health endpoint are unchanged.
+
+Do not register placeholder legal language or approval evidence. Do not create a release package, signature request, delivery, or outreach event for deployment verification.

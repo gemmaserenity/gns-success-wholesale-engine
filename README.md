@@ -114,4 +114,6 @@ npm run build
 
 Production deployment and secret setup are documented in `docs/DEPLOYMENT.md`.
 
+Phase 3 Milestone 5 adds central permission, legal-version, release-decision, signature-history, and delivery-history governance while keeping seller-facing generation and all provider actions unavailable.
+
 For the original screening-engine recap, read [`docs/PHASE-1-SESSION-NOTE.md`](docs/PHASE-1-SESSION-NOTE.md).

@@ -658,7 +658,7 @@ function renderOfferAuthorizationWorkspace(acquisitionCase, diligence, authoriza
 
 function renderOfferDraftWorkspace(acquisitionCase, authorization, draft) {
   const prior = draft ? `<div class="offer-draft-preview"><p class="eyebrow">LATEST IMMUTABLE INTERNAL DRAFT · REVISION ${draft.revisionNumber}</p><h4>${escapeHtml(draft.content.title)}</h4><p><strong>${escapeHtml(draft.content.classification.replaceAll("_", " "))}</strong> · ${escapeHtml(draft.effectiveStatus.replaceAll("_", " "))}</p><p>${escapeHtml(draft.content.notice)}</p><div class="acquisition-summary"><div><span>Seller</span><strong>${escapeHtml(draft.content.sellerName)}</strong></div><div><span>Property</span><strong>${escapeHtml(draft.content.propertyAddress)}</strong></div><div><span>Purchase ceiling</span><strong>${money.format(draft.content.terms.purchasePriceCents / 100)}</strong></div><div><span>Assignment target</span><strong>${money.format(draft.content.terms.assignmentFeeTargetCents / 100)}</strong></div><div><span>Earnest money</span><strong>${money.format(draft.content.terms.earnestMoneyCents / 100)}</strong></div><div><span>Inspection / close</span><strong>${draft.content.terms.inspectionPeriodDays} / ${draft.content.terms.closingPeriodDays} days</strong></div></div><p><strong>Preparation notes:</strong> ${escapeHtml(draft.preparationNotes)}</p><small>Template ${escapeHtml(draft.templateVersion)} · SHA-256 ${escapeHtml(draft.contentSha256)} · actor ${escapeHtml(draft.preparerFingerprint.slice(0, 12))}… · ${escapeHtml(new Date(draft.preparedAt).toLocaleString())}</small><p class="buyer-detail"><strong>Required next reviews:</strong> ${escapeHtml(draft.content.requiredNextReview.map((item) => item.replaceAll("_", " ")).join(" · "))}</p></div>` : "";
-  return `${prior}<div class="acquisition-boundary"><strong>Draft-only control.</strong> PostgreSQL assembles and hashes this internal snapshot from the current authorization. The browser cannot supply its content, and no download, signature, delivery, or outreach action exists.</div>
+  return `${prior}${draft ? `<section class="document-release-governance" data-case-id="${escapeHtml(acquisitionCase.caseId)}"><p class="loading">Loading release governance…</p></section>` : ""}<div class="acquisition-boundary"><strong>Draft-only control.</strong> PostgreSQL assembles and hashes this internal snapshot from the current authorization. The browser cannot supply its content, and no download, signature, delivery, or outreach action exists.</div>
     <form class="offer-draft-form guarded-form" data-case-id="${escapeHtml(acquisitionCase.caseId)}" data-inquiry-id="${escapeHtml(acquisitionCase.inquiryId)}" data-authorization-id="${escapeHtml(authorization.authorizationId)}">
       <div class="seller-ai-form-grid"><label>Preparer role<select name="preparerRole"><option value="ACQUISITIONS_MANAGER">Acquisitions manager</option><option value="PRINCIPAL">Principal</option></select></label><label class="full">Preparation notes<textarea name="preparationNotes" required minlength="30" maxlength="2000" rows="3" placeholder="State why this internal revision is being prepared and what must be reviewed next."></textarea></label></div>
       <label class="check-row"><input name="exactAuthorizationReconfirmed" type="checkbox" required> I reconfirmed the exact current authorization and its expiry.</label>
@@ -676,7 +676,31 @@ async function loadOfferDraftWorkspace(workspace, acquisitionCase, authorization
   try {
     const body = await send(`/api/seller/inquiries/offer-draft?${new URLSearchParams({ caseId: acquisitionCase.caseId })}`, {});
     if (body.internalDraftPreparationAvailable === false) workspace.innerHTML = '<div class="empty">Apply the Phase 3 milestone 4 internal-draft migration before preparing a draft.</div>';
-    else workspace.innerHTML = `${message ? `<div class="success-message">${escapeHtml(message)}</div>` : ""}${renderOfferDraftWorkspace(acquisitionCase, authorization, body.draft)}`;
+    else {
+      workspace.innerHTML = `${message ? `<div class="success-message">${escapeHtml(message)}</div>` : ""}${renderOfferDraftWorkspace(acquisitionCase, authorization, body.draft)}`;
+      const governance = workspace.querySelector(".document-release-governance");
+      if (governance) await loadDocumentReleaseGovernance(governance);
+    }
+  } catch (error) { workspace.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`; }
+}
+
+async function loadDocumentReleaseGovernance(workspace) {
+  try {
+    const body = await send(`/api/seller/inquiries/document-release?${new URLSearchParams({ caseId: workspace.dataset.caseId })}`, {});
+    if (body.documentReleaseGovernanceAvailable === false) {
+      workspace.innerHTML = '<div class="empty">Apply the Milestone 5 release-governance migration. Seller-facing generation, signature, and delivery remain unavailable.</div>';
+      return;
+    }
+    const governance = body.governance;
+    const checks = [
+      ["Exact current draft/hash", governance.exactCurrentDraft],
+      ["Current authorization", governance.currentAuthorization],
+      ["Approved Arizona contract version", governance.approvedLegalTemplateAvailable],
+      ["Approved Arizona wholesale disclosure", governance.approvedArizonaDisclosureAvailable],
+      ["Central preparation permission", governance.permissions.prepare],
+      ["Central final-approval permission", governance.permissions.approve],
+    ];
+    workspace.innerHTML = `<div class="offer-draft-preview"><p class="eyebrow">SELLER-FACING RELEASE GOVERNANCE</p><h4>Controlled release remains closed</h4><p>No legal artifact or approval is inferred. No provider is configured, and this application cannot generate, sign, or deliver a seller-facing document.</p><div class="acquisition-summary">${checks.map(([label, ready]) => `<div><span>${escapeHtml(label)}</span><strong>${ready ? "READY" : "MISSING"}</strong></div>`).join("")}</div><p><strong>Deterministic status:</strong> ${escapeHtml(body.preparationGate.reasonCodes.join(" · ").replaceAll("_", " "))}</p><small>Draft SHA-256 ${escapeHtml(governance.draftContentSha256 || "unavailable")} · permissions come from the central ledger, never browser role attestation.</small><p class="buyer-detail"><strong>Hard-disabled:</strong> seller-facing generation · signature request · delivery · provider calls · outreach.</p></div>`;
   } catch (error) { workspace.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`; }
 }
 
