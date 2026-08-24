@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { acquisitionDecisions, ownerIdentityStatuses, sellerAuthorityStatuses } from "./types";
+import { acquisitionDecisions, diligenceItemKinds, diligenceItemStatuses, ownerIdentityStatuses, sellerAuthorityStatuses } from "./types";
 
 const optionalMoney = z.preprocess(
   (value) => value === "" || value === undefined || value === null ? undefined : Number(value),
@@ -66,3 +66,38 @@ export const acquisitionDecisionInputSchema = z.object({
   consentBoundaryReviewed: z.boolean(),
   noOfferAuthorized: z.literal(true),
 }).strict();
+
+const diligenceItemSchema = z.object({
+  kind: z.enum(diligenceItemKinds),
+  status: z.enum(diligenceItemStatuses),
+  sourceName: z.string().trim().min(3).max(160),
+  sourceType: z.enum(["PUBLIC_RECORD", "HUMAN_VERIFIED", "PROFESSIONAL_REVIEW", "OPERATOR_REVIEW"]),
+  sourceUrl: z.string().url().max(2_048).optional().or(z.literal("")).transform((value) => value || undefined),
+  reviewedAt: z.string().datetime({ offset: true }),
+  confidence,
+  notes: z.string().trim().min(10).max(2_000),
+  costCents: z.literal(0),
+}).strict().superRefine((value, context) => {
+  if (["PUBLIC_RECORD", "HUMAN_VERIFIED", "PROFESSIONAL_REVIEW"].includes(value.sourceType) && !value.sourceUrl) {
+    context.addIssue({ code: "custom", path: ["sourceUrl"], message: "This evidence type requires an exact source URL." });
+  }
+});
+
+export const acquisitionDiligenceInputSchema = z.object({
+  caseId: z.string().uuid(),
+  inquiryId: z.string().uuid(),
+  sourceEvaluationId: z.string().uuid(),
+  buyerMatchRunId: z.string().uuid(),
+  acquisitionDecisionId: z.string().uuid(),
+  summary: z.string().trim().min(20).max(2_000),
+  materialFactsCurrent: z.boolean(),
+  noOfferGenerated: z.literal(true),
+  noOutreachInitiated: z.literal(true),
+  items: z.array(diligenceItemSchema).length(diligenceItemKinds.length),
+}).strict().superRefine((value, context) => {
+  const kinds = new Set(value.items.map((item) => item.kind));
+  for (const kind of diligenceItemKinds) {
+    if (!kinds.has(kind)) context.addIssue({ code: "custom", path: ["items"], message: `Missing diligence item: ${kind}` });
+  }
+  if (kinds.size !== value.items.length) context.addIssue({ code: "custom", path: ["items"], message: "Diligence item kinds must be unique." });
+});

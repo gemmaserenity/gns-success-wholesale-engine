@@ -56,7 +56,7 @@
         <li><span>07</span><h4>Add property evidence</h4><p>For a saved opportunity, record each fact with provider, source URL, classification, confidence, retrieval time, and cost.</p></li>
         <li><span>08</span><h4>Calculate buyer demand</h4><p>Compare the opportunity with active, contact-eligible buyer profiles. Missing constrained evidence remains unknown, not matched.</p></li>
         <li><span>09</span><h4>Selective contact research</h4><p>Only for a specifically qualified opportunity: document necessity, identity basis, privacy review, source, cost ceiling, and existing suppression before opening one research case.</p></li>
-        <li><span>10</span><h4>Human qualification and contact</h4><p>Review each finding, record contact standing separately, verify seller authority and motivation, then move into acquisition and closing. Contact data alone never authorizes outreach.</p></li>
+        <li><span>10</span><h4>Human qualification and diligence</h4><p>Review each finding, record contact standing separately, verify seller authority, then complete the acquisition checklist. Contact data alone never authorizes outreach, and checklist readiness is not offer authorization.</p></li>
       </ol>
     </section>
 
@@ -185,6 +185,20 @@
           <tr><td><code>Underwriting ranges</code></td><td>Cited value, repair, debt, lien, and title evidence</td><td>Low/high ranges, classification, confidence, and known complexity.</td><td>The working contract estimate is an internal model input, not an offer.</td></tr>
           <tr><td><code>Buyer demand</code></td><td>Current persisted evaluation plus active evidence-based buyer profiles</td><td>Versioned demand score, probable/possible counts, and criterion outcomes.</td><td>No buyer is contacted by analysis.</td></tr>
           <tr><td><code>Human decision</code></td><td>Latest verification, underwriting, and buyer-demand evidence</td><td>Advance, hold, or decline with rationale and review attestations.</td><td>The decision changes no consent and generates no offer or outreach.</td></tr>
+        </tbody></table></div>
+      </div>
+
+      <div class="mapping-block">
+        <h4>Acquisition diligence — complete only after a current advance decision</h4>
+        <div class="table-wrap"><table class="field-table"><thead><tr><th>Checklist item</th><th>Evidence used</th><th>Completion rule</th><th>Control</th></tr></thead><tbody>
+          <tr><td><code>Property / owner / authority</code></td><td>Assessor, current deed, entity/trust/probate/POA evidence, and appropriate human or professional verification</td><td>Property identity, owner identity, and the seller's authority must each be satisfied.</td><td>Seller-reported facts do not verify identity or authority.</td></tr>
+          <tr><td><code>Title / liens and payoffs / taxes</code></td><td>Title or escrow review, current payoff evidence, recorder, and treasurer</td><td>Record known support, unresolved exceptions, and whether an item is open or blocked.</td><td>A self-search is not a title guarantee and original principal is not payoff.</td></tr>
+          <tr><td><code>Distress timeline / occupancy</code></td><td>Current notice/trustee evidence and reliable inspection, seller, lease, or lawful observation evidence</td><td>Use not applicable only when the issue genuinely does not govern this case.</td><td>Recheck dates; a mailing-address difference is not occupancy proof.</td></tr>
+          <tr><td><code>Condition and repairs / value support</code></td><td>Inspection/photos/contractor scope and documented relevant sold comparable analysis</td><td>Both required items must be satisfied with current support and uncertainty recorded.</td><td>Assessed value is not ARV; unseen condition remains uncertainty.</td></tr>
+          <tr><td><code>Buyer demand</code></td><td>The current persisted `buyer-demand-v1` run and its criterion evidence</td><td>The cited run must remain current and the item must be satisfied.</td><td>Analysis does not contact a buyer or prove funds.</td></tr>
+          <tr><td><code>Wholesale disclosure</code></td><td>Current approved disclosure/compliance review for the contemplated transaction</td><td>Required and satisfied before readiness.</td><td>Checklist completion is not legal advice or an offer.</td></tr>
+          <tr><td><code>Consent and communications</code></td><td>Append-only channel consent and contact-standing evidence</td><td>Record supported channels and suppression; not applicable is allowed only if no communication is contemplated.</td><td>Property or contact data never creates permission.</td></tr>
+          <tr><td><code>Status / source / reviewed at / confidence / notes</code></td><td>The evidence cited for each item</td><td>Choose satisfied, open, blocked, or not applicable; preserve exact provenance and a zero direct cost.</td><td>Later evidence creates a new immutable review.</td></tr>
         </tbody></table></div>
       </div>
 

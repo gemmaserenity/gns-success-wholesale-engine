@@ -354,6 +354,16 @@ label.check .field-caption { gap: 5px; }
 .acquisition-summary span { display: block; color: var(--muted); font-size: 9px; letter-spacing: .06em; text-transform: uppercase; }
 .acquisition-summary strong { display: block; margin-top: 2px; font-size: 12px; }
 .acquisition-feedback { margin-top: 10px; }
+.acquisition-diligence-workspace { display: grid; gap: 12px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+.diligence-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+.diligence-item { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px; border: 1px solid var(--line); background: #fffdf9; }
+.diligence-item legend { padding: 0 5px; color: var(--brown-strong); font: 600 15px Georgia, serif; }
+.diligence-item .diligence-notes { grid-column: 1/-1; }
+.diligence-readiness { padding: 12px 14px; border-left: 4px solid var(--amber); background: #faf6f1; }
+.diligence-readiness p, .diligence-readiness small { margin: 3px 0; }
+.diligence-ready-for-human-offer-authorization { border-left-color: var(--green); }
+.diligence-blocked { border-left-color: var(--red); }
+.diligence-feedback { margin-top: 10px; }
 .seller-ai-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
 .seller-ai-heading p, .ai-privacy-note p { margin: 4px 0 0; color: var(--muted); font-size: 11px; }
 .seller-ai-content { display: grid; gap: 12px; margin-top: 12px; }
@@ -388,6 +398,7 @@ label.check .field-caption { gap: 5px; }
   .seller-controls { grid-template-columns: 1fr 1fr; }
   .seller-inquiry-grid { grid-template-columns: repeat(2,1fr); }
   .acquisition-summary { grid-template-columns: repeat(2,1fr); }
+  .diligence-grid { grid-template-columns: 1fr; }
   body::before { opacity: .18; right: -120px; }
 }
 
@@ -421,6 +432,8 @@ label.check .field-caption { gap: 5px; }
   .seller-inquiry-grid,
   .seller-status-form { grid-template-columns: 1fr; }
   .acquisition-summary { grid-template-columns: 1fr; }
+  .diligence-item { grid-template-columns: 1fr; }
+  .diligence-item .diligence-notes { grid-column: auto; }
   label.wide { grid-column: span 1; }
   .metric { border-right: 0; border-bottom: 1px solid var(--line); }
   .target { min-width: 0; }

@@ -45,6 +45,7 @@ Add:
 After revenue validates the model, evaluate:
 
 - [x] first operational milestone: seller inquiry → verified property research → underwriting → buyer-demand evidence → human acquisition decision
+- [x] second operational milestone: immutable acquisition diligence → explicit blockers/open items → evidence-only readiness for a separate human offer-authorization step
 
 - premium property-data providers
 - premium AVM/comparable-sales data

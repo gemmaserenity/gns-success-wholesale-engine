@@ -54,6 +54,8 @@ AI-assisted intake remains inside the authenticated Worker. It creates a version
 
 Phase 3 milestone 1 connects an inbound inquiry to the existing opportunity engine only inside the authenticated Worker. An operator cites a zero-cost public record or completed human verification, confirms parcel identity, records owner/authority standing and confidence, and supplies bounded underwriting evidence. One restricted PostgreSQL function persists the normalized opportunity evaluation, acquisition case, and immutable verification together. The existing buyer-demand model can then create its own immutable run and revised evaluation. An append-only human decision may advance, hold, or decline; advance requires the latest non-rejected evaluation, matched owner, verified seller authority, a current buyer-demand run, and explicit review attestations. No action contacts a seller or buyer, transmits data to a provider, or generates or authorizes an offer.
 
+Phase 3 milestone 2 adds an immutable diligence ledger after an advance decision. The private Worker requires the advance decision, evaluation, and buyer-demand run to remain mutually current, then records exactly one status and provenance envelope for each of 13 acquisition checks. The deterministic `acquisition-diligence-v1` assessment distinguishes open research from blockers and can report readiness for a later human offer-authorization step. PostgreSQL independently recomputes the assessment before inserting the review and items. Readiness is not authorization: no offer endpoint, document generator, provider transmission, or outreach action is introduced.
+
 ### GitHub
 
 GitHub is the canonical source repository and deployment history.

@@ -209,3 +209,24 @@ Deploy only the authenticated Worker; the public seller Worker has no Phase 3 ro
 6. Advance is denied without matched ownership, verified seller authority, current buyer-demand evidence, and human review attestations.
 7. Advance, hold, or decline adds a decision row without changing the inquiry, consent events, property verification, evaluation, or buyer-match history.
 8. Responses continue to report `externalTransmissionAllowed: false`, `outreachInitiated: false`, and `offerGenerated: false` as applicable.
+
+## Phase 3 acquisition-diligence milestone 2 deployment
+
+After the milestone 1 migration is registered, apply:
+
+```text
+supabase/migrations/202608240002_phase3_acquisition_diligence.sql
+```
+
+Deploy only the authenticated Worker. The public seller Worker, its assets, bindings, and routes are unchanged. Then verify:
+
+1. The two diligence tables and `current_seller_acquisition_diligence` view exist, and the service role cannot update or delete diligence history.
+2. An authenticated synthetic `GET /api/seller/inquiries/acquisition-diligence?caseId=<UUID>` reports `acquisitionDiligenceAvailable: true`, with offer authorization, offer generation, and outreach all unavailable.
+3. A review is rejected unless the latest decision advances the case and still references the latest evaluation and buyer-demand run.
+4. A review requires exactly one of every checklist kind, zero direct cost, provenance, confidence, notes, and the no-offer/no-outreach attestations.
+5. PostgreSQL derives the same open items, blockers, and readiness as `acquisition-diligence-v1` before transactionally storing a review and 13 items.
+6. A later review appends history; it never updates or deletes a prior review or item.
+7. `READY_FOR_HUMAN_OFFER_AUTHORIZATION` does not authorize an offer. Confirm no offer-generation, sending, contact, or provider route exists.
+8. The unauthenticated private hostname still reaches Cloudflare Access, and the unchanged public seller health endpoint remains healthy.
+
+Do not create a production diligence review merely to test deployment. A schema-presence GET with a synthetic UUID is sufficient when no approved test case exists.

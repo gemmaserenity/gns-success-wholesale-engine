@@ -149,3 +149,13 @@ The first Phase 3 case accepts only cited public-record or completed human-verif
 ### Advance is a human evidence decision, not an offer
 
 The application permits advance, hold, or decline decisions. Advance requires the latest non-rejected evaluation, verified parcel identity, matched owner, verified seller authority, and a current buyer-demand run. Every decision preserves a rationale and the no-offer boundary. No case action changes consent, initiates outreach, or drafts transaction terms.
+
+## 2026-08-23 — Phase 3 acquisition-diligence milestone
+
+### Diligence is an immutable checklist, not mutable case state
+
+Each review snapshots all 13 acquisition checks with status, source, retrieval/review time, confidence, notes, and zero cost. Later research creates another review instead of rewriting the earlier one. The application and database both require current evaluation, buyer-demand, and advance-decision linkage.
+
+### Readiness stops before authorization
+
+The deterministic result is limited to `NEEDS_RESEARCH`, `BLOCKED`, or `READY_FOR_HUMAN_OFFER_AUTHORIZATION`. The last state is intentionally phrased as readiness for a future human act: it is not itself authorization. Milestone 2 adds no offer terms, offer generation, sending, signature, provider call, or outreach interface.

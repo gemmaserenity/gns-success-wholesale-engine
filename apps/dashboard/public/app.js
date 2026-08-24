@@ -1,5 +1,12 @@
 const $ = (selector) => document.querySelector(selector);
 const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+const acquisitionDiligenceItems = [
+  ["PROPERTY_IDENTITY", "Property identity"], ["OWNER_IDENTITY", "Owner identity"], ["SELLER_AUTHORITY", "Seller authority"],
+  ["TITLE", "Title review"], ["LIENS_PAYOFFS", "Liens and payoffs"], ["TAXES", "Property taxes"],
+  ["DISTRESS_TIMELINE", "Distress timeline"], ["OCCUPANCY", "Occupancy"], ["CONDITION_REPAIRS", "Condition and repairs"],
+  ["VALUE_SUPPORT", "Value support"], ["BUYER_DEMAND", "Buyer demand"], ["WHOLESALE_DISCLOSURE", "Wholesale disclosure"],
+  ["CONSENT_COMMUNICATIONS", "Consent and communications"],
+];
 
 const fieldHelp = {
   county: "Choose the Arizona county that maintains this parcel's public records. Find it on the assessor, treasurer, recorder, or trustee-sale record.",
@@ -550,6 +557,9 @@ function renderAcquisitionCase(inquiryId, acquisitionCase) {
   const base = evaluation.baseUnderwriting;
   const buyer = acquisitionCase.buyerDemand;
   const decision = acquisitionCase.decision;
+  const diligencePanel = decision?.decision === "ADVANCE_TO_ACQUISITION_REVIEW"
+    ? `<section class="acquisition-diligence-workspace" data-case-id="${escapeHtml(acquisitionCase.caseId)}"><p class="loading">Loading acquisition diligence…</p></section>`
+    : '<div class="empty compact">Record an advance-to-acquisition-review decision before opening diligence.</div>';
   const buyerPanel = buyer
     ? `<div class="acquisition-summary"><div><span>Buyer demand</span><strong>${buyer.buyerDemandScore}/100</strong></div><div><span>Probable buyers</span><strong>${buyer.probableBuyerCount}</strong></div><div><span>Possible buyers</span><strong>${buyer.possibleBuyerCount}</strong></div></div>`
     : evaluation.state === "REJECTED" ? '<div class="empty compact">Rejected underwriting cannot enter buyer-demand analysis.</div>' : '<button class="secondary run-acquisition-buyer-match" type="button">Run buyer-demand analysis</button>';
@@ -564,7 +574,45 @@ function renderAcquisitionCase(inquiryId, acquisitionCase) {
       <label class="check-row"><input name="consentBoundaryReviewed" type="checkbox"> I reviewed channel-specific consent; this decision does not create permission.</label>
       <label class="check-row"><input name="noOfferAuthorized" type="checkbox" required> I understand this decision does not generate or authorize an offer.</label>
       <button class="primary" type="submit">Record human decision</button><div class="acquisition-feedback" aria-live="polite"></div>
+    </form>${diligencePanel}`;
+}
+
+function renderDiligenceWorkspace(acquisitionCase, diligence) {
+  const previousItems = new Map((diligence?.items || []).map((item) => [item.kind, item]));
+  const prior = diligence ? `<div class="diligence-readiness diligence-${diligence.readiness.toLowerCase().replaceAll("_", "-")}"><p class="eyebrow">LATEST IMMUTABLE REVIEW</p><strong>${escapeHtml(diligence.readiness.replaceAll("_", " "))}</strong><p>${escapeHtml(diligence.summary)}</p><small>${diligence.openItemKinds.length} open · ${diligence.blockedItemKinds.length} blocked · ${escapeHtml(new Date(diligence.reviewedAt).toLocaleString())}</small></div>` : "";
+  const items = acquisitionDiligenceItems.map(([kind, label]) => {
+    const item = previousItems.get(kind);
+    const status = item?.status || "OPEN";
+    const sourceType = item?.sourceType || "OPERATOR_REVIEW";
+    return `<fieldset class="diligence-item" data-kind="${kind}"><legend>${escapeHtml(label)}</legend>
+      <label>Status<select name="itemStatus"><option value="SATISFIED" ${status === "SATISFIED" ? "selected" : ""}>Satisfied</option><option value="OPEN" ${status === "OPEN" ? "selected" : ""}>Open</option><option value="BLOCKED" ${status === "BLOCKED" ? "selected" : ""}>Blocked</option><option value="NOT_APPLICABLE" ${status === "NOT_APPLICABLE" ? "selected" : ""}>Not applicable</option></select></label>
+      <label>Evidence class<select name="itemSourceType"><option value="OPERATOR_REVIEW" ${sourceType === "OPERATOR_REVIEW" ? "selected" : ""}>Operator review</option><option value="PUBLIC_RECORD" ${sourceType === "PUBLIC_RECORD" ? "selected" : ""}>Public record</option><option value="HUMAN_VERIFIED" ${sourceType === "HUMAN_VERIFIED" ? "selected" : ""}>Human verified</option><option value="PROFESSIONAL_REVIEW" ${sourceType === "PROFESSIONAL_REVIEW" ? "selected" : ""}>Professional review</option></select></label>
+      <label>Source<input name="itemSourceName" required minlength="3" maxlength="160" value="${escapeHtml(item?.sourceName || "Operator review")}"></label>
+      <label>Exact source URL<input name="itemSourceUrl" type="url" value="${escapeHtml(item?.sourceUrl || "")}" placeholder="Required except for operator review"></label>
+      <label>Confidence<select name="itemConfidence"><option value="0.9" ${!item || item.confidence === 0.9 ? "selected" : ""}>High · 90%</option><option value="0.75" ${item?.confidence === 0.75 ? "selected" : ""}>Good · 75%</option><option value="0.6" ${item?.confidence === 0.6 ? "selected" : ""}>Moderate · 60%</option><option value="0.4" ${item?.confidence === 0.4 ? "selected" : ""}>Low · 40%</option></select></label>
+      <label class="diligence-notes">Evidence and remaining questions<textarea name="itemNotes" required minlength="10" maxlength="2000" rows="2">${escapeHtml(item?.notes || "")}</textarea></label>
+    </fieldset>`;
+  }).join("");
+  return `<div class="acquisition-boundary"><strong>Readiness only.</strong> This review records existing zero-cost evidence and blockers. It cannot authorize or generate an offer and cannot initiate outreach.</div>${prior}
+    <form class="acquisition-diligence-form guarded-form" data-case-id="${escapeHtml(acquisitionCase.caseId)}" data-inquiry-id="${escapeHtml(acquisitionCase.inquiryId)}" data-evaluation-id="${escapeHtml(acquisitionCase.evaluation.evaluationId)}" data-buyer-run-id="${escapeHtml(acquisitionCase.buyerDemand.runId)}" data-decision-id="${escapeHtml(acquisitionCase.decision.decisionId)}">
+      <div class="section-heading compact-heading"><h4>Material-fact diligence</h4><p>Complete every item with current evidence. Required items cannot be marked not applicable.</p></div>
+      <div class="diligence-grid">${items}</div>
+      <label>Diligence summary<textarea name="summary" required minlength="20" maxlength="2000" rows="3">${escapeHtml(diligence?.summary || "")}</textarea></label>
+      <label class="check-row"><input name="materialFactsCurrent" type="checkbox" ${diligence?.materialFactsCurrent ? "checked" : ""}> I confirmed the material facts are current as of this review.</label>
+      <label class="check-row"><input name="noOfferGenerated" type="checkbox" required> I understand this review does not authorize or generate an offer.</label>
+      <label class="check-row"><input name="noOutreachInitiated" type="checkbox" required> I understand this review does not contact the seller or any buyer.</label>
+      <button class="primary" type="submit">Record immutable diligence review</button><div class="diligence-feedback" aria-live="polite"></div>
     </form>`;
+}
+
+async function loadDiligenceWorkspace(workspace, acquisitionCase, message = "") {
+  workspace.innerHTML = '<p class="loading">Loading acquisition diligence…</p>';
+  try {
+    const params = new URLSearchParams({ caseId: acquisitionCase.caseId });
+    const body = await send(`/api/seller/inquiries/acquisition-diligence?${params}`, {});
+    if (body.acquisitionDiligenceAvailable === false) workspace.innerHTML = '<div class="empty">Apply the Phase 3 milestone 2 diligence migration before recording a review.</div>';
+    else workspace.innerHTML = `${message ? `<div class="success-message">${escapeHtml(message)}</div>` : ""}${renderDiligenceWorkspace(acquisitionCase, body.diligence)}`;
+  } catch (error) { workspace.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`; }
 }
 
 async function loadAcquisitionWorkspace(workspace, message = "") {
@@ -577,7 +625,11 @@ async function loadAcquisitionWorkspace(workspace, message = "") {
     const params = new URLSearchParams({ inquiryId: workspace.dataset.inquiryId });
     const body = await send(`/api/seller/inquiries/acquisition-case?${params}`, {});
     if (body.acquisitionWorkflowAvailable === false) content.innerHTML = '<div class="empty">Apply the Phase 3 seller-acquisition migration before opening a case.</div>';
-    else content.innerHTML = `${message ? `<div class="success-message">${escapeHtml(message)}</div>` : ""}${renderAcquisitionCase(workspace.dataset.inquiryId, body.acquisitionCase)}`;
+    else {
+      content.innerHTML = `${message ? `<div class="success-message">${escapeHtml(message)}</div>` : ""}${renderAcquisitionCase(workspace.dataset.inquiryId, body.acquisitionCase)}`;
+      const diligenceWorkspace = content.querySelector(".acquisition-diligence-workspace");
+      if (diligenceWorkspace && body.acquisitionCase) await loadDiligenceWorkspace(diligenceWorkspace, body.acquisitionCase);
+    }
     button.textContent = "Hide workflow";
     button.setAttribute("aria-expanded", "true");
   } catch (error) { content.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`; }
@@ -658,6 +710,35 @@ $("#seller-inquiry-list").addEventListener("click", async (event) => {
     content.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
     button.disabled = false;
   }
+});
+
+$("#seller-inquiry-list").addEventListener("submit", async (event) => {
+  const form = event.target.closest(".acquisition-diligence-form");
+  if (!form) return;
+  event.preventDefault();
+  const button = event.submitter;
+  const feedback = form.querySelector(".diligence-feedback");
+  button.disabled = true; feedback.innerHTML = "";
+  try {
+    const data = Object.fromEntries(new FormData(form));
+    const reviewedAt = new Date().toISOString();
+    const items = [...form.querySelectorAll(".diligence-item")].map((item) => ({
+      kind: item.dataset.kind, status: item.querySelector('[name="itemStatus"]').value,
+      sourceName: item.querySelector('[name="itemSourceName"]').value,
+      sourceType: item.querySelector('[name="itemSourceType"]').value,
+      sourceUrl: item.querySelector('[name="itemSourceUrl"]').value || undefined,
+      reviewedAt, confidence: Number(item.querySelector('[name="itemConfidence"]').value),
+      notes: item.querySelector('[name="itemNotes"]').value, costCents: 0,
+    }));
+    const body = await send("/api/seller/inquiries/acquisition-diligence", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+      caseId: form.dataset.caseId, inquiryId: form.dataset.inquiryId, sourceEvaluationId: form.dataset.evaluationId,
+      buyerMatchRunId: form.dataset.buyerRunId, acquisitionDecisionId: form.dataset.decisionId,
+      summary: data.summary, materialFactsCurrent: data.materialFactsCurrent === "on",
+      noOfferGenerated: data.noOfferGenerated === "on", noOutreachInitiated: data.noOutreachInitiated === "on", items,
+    }) });
+    const acquisitionWorkspace = form.closest(".seller-acquisition-workspace");
+    await loadAcquisitionWorkspace(acquisitionWorkspace, `${body.diligence.readiness.replaceAll("_", " ")} recorded. No offer was authorized or generated.`);
+  } catch (error) { feedback.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`; button.disabled = false; }
 });
 
 $("#seller-inquiry-list").addEventListener("submit", async (event) => {

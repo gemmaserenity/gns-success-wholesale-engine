@@ -1,7 +1,7 @@
 import { z, ZodError } from "zod";
 import { TrusteeSaleCsvAdapter } from "../../src/adapters/csv/csv-adapter";
-import { acquisitionDecisionInputSchema, acquisitionResearchInputSchema } from "../../src/domain/acquisition/schema";
-import { buildSellerAcquisitionLead, evaluateAcquisitionDecisionGate } from "../../src/domain/acquisition/workflow";
+import { acquisitionDecisionInputSchema, acquisitionDiligenceInputSchema, acquisitionResearchInputSchema } from "../../src/domain/acquisition/schema";
+import { assessAcquisitionDiligence, buildSellerAcquisitionLead, evaluateAcquisitionDecisionGate, evaluateDiligenceEntryGate } from "../../src/domain/acquisition/workflow";
 import { buyerProfileInputSchema } from "../../src/domain/buyers/schema";
 import {
   analyzeBuyerDemand,
@@ -27,7 +27,7 @@ import { normalizeApn, normalizeCounty } from "../../src/domain/opportunities/no
 import { counties, pipelineStates } from "../../src/domain/opportunities/types";
 import type { County, PipelineState } from "../../src/domain/opportunities/types";
 import { evaluateOpportunity } from "../../src/services/evaluate-opportunity";
-import { getAcquisitionCase, persistAcquisitionCase, recordAcquisitionDecision } from "../../src/services/acquisition-repository";
+import { getAcquisitionCase, getAcquisitionDiligence, persistAcquisitionCase, persistAcquisitionDiligence, recordAcquisitionDecision } from "../../src/services/acquisition-repository";
 import { listBuyers, persistBuyerProfile } from "../../src/services/buyer-repository";
 import { getBuyerMatchStatus, persistBuyerMatchRun } from "../../src/services/buyer-match-repository";
 import {
@@ -219,6 +219,41 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
       return json({ acquisitionCase, gate, outreachInitiated: false, offerGenerated: false }, 201);
     } catch (error) {
       if (error instanceof SupabaseFeatureUnavailableError) return json({ error: "Apply the Phase 3 seller-acquisition migration before recording a decision." }, 409);
+      throw error;
+    }
+  }
+  if (url.pathname === "/api/seller/inquiries/acquisition-diligence" && request.method === "GET") {
+    const config = supabaseConfig(env);
+    if (!config) return json({ diligence: null, persistence: false });
+    const caseId = z.string().uuid().parse(url.searchParams.get("caseId"));
+    try {
+      return json({
+        diligence: await getAcquisitionDiligence(config, caseId) ?? null,
+        persistence: true,
+        acquisitionDiligenceAvailable: true,
+        offerAuthorizationAvailable: false,
+        offerGenerationAvailable: false,
+        outreachAvailable: false,
+      });
+    } catch (error) {
+      if (error instanceof SupabaseFeatureUnavailableError) return json({ diligence: null, persistence: true, acquisitionDiligenceAvailable: false }, 409);
+      throw error;
+    }
+  }
+  if (url.pathname === "/api/seller/inquiries/acquisition-diligence" && request.method === "POST") {
+    const config = supabaseConfig(env);
+    if (!config) return json({ error: "Supabase persistence is required for acquisition diligence." }, 503);
+    const input = acquisitionDiligenceInputSchema.parse(JSON.parse(await parseBoundedText(request, 65_536)));
+    try {
+      const status = await getAcquisitionCase(config, input.inquiryId);
+      if (!status || status.caseId !== input.caseId) return json({ error: "Acquisition case was not found." }, 404);
+      const gate = evaluateDiligenceEntryGate(status, input);
+      if (!gate.allowed) return json({ error: `Acquisition diligence was denied: ${gate.reasonCodes.join(", ")}.`, gate }, 422);
+      const assessment = assessAcquisitionDiligence(input);
+      const diligence = await persistAcquisitionDiligence(config, crypto.randomUUID(), input, assessment, gate, new Date().toISOString());
+      return json({ diligence, gate, offerAuthorized: false, offerGenerated: false, outreachInitiated: false }, 201);
+    } catch (error) {
+      if (error instanceof SupabaseFeatureUnavailableError) return json({ error: "Apply the Phase 3 milestone 2 diligence migration before recording a review." }, 409);
       throw error;
     }
   }

@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { acquisitionResearchInputSchema, acquisitionDecisionInputSchema } from "../../src/domain/acquisition/schema";
-import { buildSellerAcquisitionLead, evaluateAcquisitionDecisionGate } from "../../src/domain/acquisition/workflow";
-import type { AcquisitionCaseStatus, AcquisitionResearchInput } from "../../src/domain/acquisition/types";
+import { acquisitionResearchInputSchema, acquisitionDecisionInputSchema, acquisitionDiligenceInputSchema } from "../../src/domain/acquisition/schema";
+import { assessAcquisitionDiligence, buildSellerAcquisitionLead, evaluateAcquisitionDecisionGate, evaluateDiligenceEntryGate } from "../../src/domain/acquisition/workflow";
+import { diligenceItemKinds } from "../../src/domain/acquisition/types";
+import type { AcquisitionCaseStatus, AcquisitionDiligenceInput, AcquisitionResearchInput } from "../../src/domain/acquisition/types";
 import type { SellerInquiry } from "../../src/domain/seller-intake/types";
 
 const inquiry: SellerInquiry = {
@@ -30,6 +31,19 @@ const status: AcquisitionCaseStatus = {
   buyerDemand: { runId: "00000000-0000-4000-8000-000000000807", sourceEvaluationId: "00000000-0000-4000-8000-000000000805", revisedEvaluationId: "00000000-0000-4000-8000-000000000806", buyerDemandScore: 82, probableBuyerCount: 2, possibleBuyerCount: 1, analyzedAt: "2026-08-24T02:05:00.000Z" },
 };
 
+const advancedStatus: AcquisitionCaseStatus = {
+  ...status,
+  decision: { decisionId: "00000000-0000-4000-8000-000000000808", decision: "ADVANCE_TO_ACQUISITION_REVIEW", sourceEvaluationId: status.evaluation.evaluationId, buyerMatchRunId: status.buyerDemand?.runId, rationale: "Verified evidence supports moving into a controlled diligence review.", decidedAt: "2026-08-24T02:10:00.000Z" },
+};
+
+const diligenceInput: AcquisitionDiligenceInput = {
+  caseId: status.caseId, inquiryId: status.inquiryId, sourceEvaluationId: status.evaluation.evaluationId,
+  buyerMatchRunId: status.buyerDemand?.runId ?? "", acquisitionDecisionId: advancedStatus.decision?.decisionId ?? "",
+  summary: "All required diligence items were reviewed against current zero-cost evidence.",
+  materialFactsCurrent: true, noOfferGenerated: true, noOutreachInitiated: true,
+  items: diligenceItemKinds.map((kind) => ({ kind, status: "SATISFIED", sourceName: "Operator review", sourceType: "OPERATOR_REVIEW", reviewedAt: "2026-08-24T03:00:00.000Z", confidence: 0.9, notes: `Current evidence was reviewed for ${kind}.`, costCents: 0 })),
+};
+
 describe("seller acquisition workflow", () => {
   it("builds underwriting input with inquiry provenance and no external-provider action", () => {
     const lead = buildSellerAcquisitionLead(inquiry, research);
@@ -52,5 +66,25 @@ describe("seller acquisition workflow", () => {
   it("permits a human hold without pretending missing buyer evidence exists", () => {
     const input = acquisitionDecisionInputSchema.parse({ caseId: status.caseId, inquiryId: status.inquiryId, sourceEvaluationId: status.evaluation.evaluationId, decision: "HOLD_FOR_RESEARCH", rationale: "Additional title evidence is required before this inquiry can advance.", materialFactsReviewed: false, consentBoundaryReviewed: false, noOfferAuthorized: true });
     expect(evaluateAcquisitionDecisionGate({ ...status, buyerDemand: undefined }, input).allowed).toBe(true);
+  });
+
+  it("requires every zero-cost diligence item exactly once", () => {
+    expect(acquisitionDiligenceInputSchema.safeParse(diligenceInput).success).toBe(true);
+    expect(acquisitionDiligenceInputSchema.safeParse({ ...diligenceInput, items: diligenceInput.items.slice(1) }).success).toBe(false);
+    expect(acquisitionDiligenceInputSchema.safeParse({ ...diligenceInput, items: diligenceInput.items.map((item, index) => index === 0 ? { ...item, costCents: 1 } : item) }).success).toBe(false);
+  });
+
+  it("calculates readiness from open and blocked evidence without authorizing an offer", () => {
+    expect(assessAcquisitionDiligence(diligenceInput)).toMatchObject({ readiness: "READY_FOR_HUMAN_OFFER_AUTHORIZATION", reasonCodes: ["READY_FOR_HUMAN_OFFER_AUTHORIZATION"] });
+    const open = { ...diligenceInput, items: diligenceInput.items.map((item) => item.kind === "TITLE" ? { ...item, status: "OPEN" as const } : item) };
+    expect(assessAcquisitionDiligence(open)).toMatchObject({ readiness: "NEEDS_RESEARCH", openItemKinds: ["TITLE"] });
+    const blocked = { ...diligenceInput, items: diligenceInput.items.map((item) => item.kind === "LIENS_PAYOFFS" ? { ...item, status: "BLOCKED" as const } : item) };
+    expect(assessAcquisitionDiligence(blocked)).toMatchObject({ readiness: "BLOCKED", blockedItemKinds: ["LIENS_PAYOFFS"] });
+  });
+
+  it("opens diligence only from the current advanced acquisition evidence", () => {
+    expect(evaluateDiligenceEntryGate(advancedStatus, diligenceInput)).toEqual({ allowed: true, reasonCodes: ["DILIGENCE_REVIEW_ALLOWED"] });
+    expect(evaluateDiligenceEntryGate(status, diligenceInput)).toMatchObject({ allowed: false, reasonCodes: expect.arrayContaining(["ACQUISITION_ADVANCE_REQUIRED"]) });
+    expect(evaluateDiligenceEntryGate({ ...advancedStatus, decision: { ...advancedStatus.decision!, sourceEvaluationId: "00000000-0000-4000-8000-000000000809" } }, diligenceInput)).toMatchObject({ allowed: false, reasonCodes: expect.arrayContaining(["ACQUISITION_DECISION_STALE"]) });
   });
 });
