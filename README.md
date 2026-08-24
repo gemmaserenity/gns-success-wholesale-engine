@@ -75,7 +75,7 @@ The private acquisition workflow now records an expiring, revocable human author
 
 ## Phase 3 operational milestone 4
 
-The private acquisition workflow can now prepare an immutable, versioned internal offer-terms draft from the exact current authorization. PostgreSQL assembles the snapshot from canonical seller and authorization records, computes its SHA-256, and preserves each revision. The record is not an approved seller-facing offer, contract, or disclosure; no file export, signature request, delivery, provider, or outreach action exists. Apply `202608240004_phase3_internal_offer_drafts.sql`; see [`docs/PHASE-3-MILESTONE-4.md`](docs/PHASE-3-MILESTONE-4.md).
+The private acquisition workflow can now prepare an immutable, versioned internal offer-terms draft from the exact current authorization. PostgreSQL assembles the snapshot from canonical seller and authorization records, computes its SHA-256, and preserves each revision. The record is not an approved seller-facing offer, contract, or disclosure; no file export, signature request, delivery, provider, or outreach action exists. Apply `202608240004_phase3_internal_offer_drafts.sql`; see [`docs/PHASE-3-MILESTONE-4.md`](docs/PHASE-3-MILESTONE-4.md) and the [`completion note`](docs/PHASE-3-MILESTONE-4-COMPLETION.md).
 
 ## Phase 1 foundation
 
